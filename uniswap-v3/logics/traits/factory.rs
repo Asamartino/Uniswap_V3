@@ -25,7 +25,7 @@ pub trait Factory {
     fn fee_amount_tick_spacing(&self, fee: u32) -> Option<i32>;
 
     #[ink(message)]
-    fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee: u32) -> Option<AccountId>;
+    fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee:u32) -> Option<AccountId>;
 
     // Events
     fn _emit_owner_changed_event(&self, _original_owner: AccountId, _new_owner: AccountId) {}

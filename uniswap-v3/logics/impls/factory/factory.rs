@@ -41,23 +41,30 @@ impl<T: Storage<data::Data>> Factory for T {
         let salt = Self::env().hash_encoded::<Blake2x256, _>(&token_pair);
         let pool_contract = self._instantiate_pool(salt.as_ref())?;
 
-        PoolRef::initialize(&pool_contract, token_pair.0, token_pair.1, fee)?;
+        //////////////////////////////////////////////////////////////// uncomment once pool contract is coded
+        // PoolRef::initialize(&pool_contract, token_pair.0, token_pair.1, fee)?;
 
         //////////////////////////////////////////////////////////////////////////////////////
 
         self.data::<data::Data>()
             .get_pool
-            .insert(&(token_pair.0, token_pair.1, fee), &pool_contract);
+            .insert(&(token_pair.0, (token_pair.1, fee)), &pool_contract);
         self.data::<data::Data>()
             .get_pool
             .insert(&(token_pair.1, token_pair.0, fee), &pool_contract);
 
-        self._emit_create_pool_event(&self, token_a, token_b, fee, tick_spacing, pool_contract);
+        self._emit_create_pool_event(token_a, token_b, fee, tick_spacing, pool_contract);
         Ok(pool_contract)
     }
 
-    default fn _instantiate_pool(&mut self,_salt_bytes: &[u8]) -> Result<AccountId, FactoryError> {
+    default fn _instantiate_pool(&mut self, _salt_bytes: &[u8]) -> Result<AccountId, FactoryError> {
         unimplemented!()
+    }
+
+    fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee: u32) -> Option<AccountId> {
+        self.data::<data::Data>()
+            .get_pool
+            .get(&(token_a, (token_b, fee)))
     }
 
     #[modifiers(only_owner)]
@@ -103,11 +110,5 @@ impl<T: Storage<data::Data>> Factory for T {
     }
 
     default fn _emit_owner_changed_event(&self, _original_owner: AccountId, _new_owner: AccountId) {
-    }
-
-    fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee: u32) -> Option<AccountId> {
-        self.data::<data::Data>()
-            .get_pool
-            .get(&(token_a, token_b, fee))
     }
 }
