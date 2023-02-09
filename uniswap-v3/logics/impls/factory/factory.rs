@@ -1,4 +1,4 @@
-use crate::traits::factory::FactoryRef;
+use crate::traits::pool::PoolRef;
 
 pub use crate::{impls::factory::*, traits::factory::*};
 
@@ -11,7 +11,6 @@ use openbrush::{
 };
 
 impl<T: Storage<data::Data>> Factory for T {
-    #[modifiers(only_owner)]
     fn create_pool(
         &mut self,
         token_a: AccountId,
@@ -29,16 +28,20 @@ impl<T: Storage<data::Data>> Factory for T {
         if token_pair.0 == ZERO_ADDRESS.into() {
             return Err(FactoryError::ZeroAddress);
         }
-        let tick_spacing = self.fee_amount_tick_spacing(fee)?;
+        let tick_spacing = self
+            .fee_amount_tick_spacing(fee)
+            .ok_or(FactoryError::NoTickSpacing)?;
         if tick_spacing == 0 {
             return Err(FactoryError::ZeroTickSpacing);
         }
         ///////////////////////////////////////////////////////////////////////////////////////
         // not sure how to translate UniswapV3PoolDeployer.sol and deploy() to ink!
-        // will use a similar solution than UniswapV2Factory translation to ink!
-        let salt = Self::env().hash_encoded::<Blake2x256, _>(&token_pair, fee);
-        let pool_contract = self._intantiate_pool(salt.as_ref())?;
-        FactoryRef::initialize(&pool_contract, token_pair.0, token_pair.1, fee)?;
+        // will use a similar solution than the one use for UniswapV2Factory translation to ink!
+
+        let salt = Self::env().hash_encoded::<Blake2x256, _>(&token_pair);
+        let pool_contract = self._instantiate_pool(salt.as_ref())?;
+
+        PoolRef::initialize(&pool_contract, token_pair.0, token_pair.1, fee)?;
 
         //////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,11 +52,22 @@ impl<T: Storage<data::Data>> Factory for T {
             .get_pool
             .insert(&(token_pair.1, token_pair.0, fee), &pool_contract);
 
-        self._pool_created(&self, token_a, token_b, fee, tick_spacing, pool_contract);
+        self._emit_create_pool_event(&self, token_a, token_b, fee, tick_spacing, pool_contract);
         Ok(pool_contract)
     }
-    ////////////// ???????????????????????????????????
 
+    default fn _instantiate_pool(&mut self,_salt_bytes: &[u8]) -> Result<AccountId, FactoryError> {
+        unimplemented!()
+    }
+
+    #[modifiers(only_owner)]
+    fn set_owner(&mut self, _owner: AccountId) -> Result<(), FactoryError> {
+        self._emit_owner_changed_event(self.data::<data::Data>().owner, _owner);
+        self.data::<data::Data>().owner = _owner;
+        Ok(())
+    }
+
+    #[modifiers(only_owner)]
     fn enable_fee_amount(&self, fee: u32, tick_spacing: i32) -> Result<(), FactoryError> {
         if fee < 1000000 {
             return Err(FactoryError::FeeTooBig);
@@ -67,11 +81,8 @@ impl<T: Storage<data::Data>> Factory for T {
         if tick_spacing == 0 {
             return Err(FactoryError::ZeroTickSpacing);
         }
-        // tick spacing is capped at 16384 to prevent the situation where tickSpacing is so large that
-        // TickBitmap#nextInitializedTickWithinOneWord overflows int24 container from a valid tick
-        // 16384 ticks represents a >5x price change with ticks of 1 bips
         *self.fee_amount_tick_spacing.entry(fee).or_insert(0) = tick_spacing;
-        self._fee_amount_enabled(fee, tick_spacing);
+        self._emit_fee_amount_enabled(fee, tick_spacing);
         Ok(())
     }
 
@@ -79,13 +90,19 @@ impl<T: Storage<data::Data>> Factory for T {
         self.data::<data::Data>().fee_amount_tick_spacing.get(&fee)
     }
 
-    default fn _fee_amount_enabled(&self, _fee: u32, _tick_spacing: i32) {}
+    default fn _emit_fee_amount_enabled_event(&self, _fee: u32, _tick_spacing: i32) {}
 
-    default fn _instantiate_pool(
-        &mut self,
-        _salt_bytes: &[u32],
-    ) -> Result<AccountId, FactoryError> {
-        unimplemented!()
+    default fn _emit_create_pool_event(
+        &self,
+        _token_a: AccountId,
+        _token_b: AccountId,
+        _fee: u32,
+        _tick_spacing: i32,
+        _pool: AccountId,
+    ) {
+    }
+
+    default fn _emit_owner_changed_event(&self, _original_owner: AccountId, _new_owner: AccountId) {
     }
 
     fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee: u32) -> Option<AccountId> {
