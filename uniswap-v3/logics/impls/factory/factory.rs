@@ -10,7 +10,7 @@ use openbrush::{
     traits::{AccountId, Storage, ZERO_ADDRESS},
 };
 
-impl<T: Storage<data::Data>> Factory for T {
+impl<T: Storage<data::Data> + Storage<ownable::Data>> Factory for T {
     fn create_pool(
         &mut self,
         token_a: AccountId,
@@ -29,7 +29,7 @@ impl<T: Storage<data::Data>> Factory for T {
             return Err(FactoryError::ZeroAddress);
         }
         let tick_spacing = self
-            .fee_amount_tick_spacing(fee)
+            .get_fee_amount_tick_spacing(fee)
             .ok_or(FactoryError::NoTickSpacing)?;
         if tick_spacing == 0 {
             return Err(FactoryError::ZeroTickSpacing);
@@ -41,14 +41,15 @@ impl<T: Storage<data::Data>> Factory for T {
         let salt = Self::env().hash_encoded::<Blake2x256, _>(&token_pair);
         let pool_contract = self._instantiate_pool(salt.as_ref())?;
 
-        //////////////////////////////////////////////////////////////// uncomment once pool contract is coded
+        /////////////////////////////                             uncomment once pool contract is coded                            ///////////////////////////////////////////////////////
         // PoolRef::initialize(&pool_contract, token_pair.0, token_pair.1, fee)?;
+        /////////////////////////////                                                                                              ///////////////////////////////////////////////////////
 
         //////////////////////////////////////////////////////////////////////////////////////
 
         self.data::<data::Data>()
             .get_pool
-            .insert(&(token_pair.0, (token_pair.1, fee)), &pool_contract);
+            .insert(&(token_pair.0, token_pair.1, fee), &pool_contract);
         self.data::<data::Data>()
             .get_pool
             .insert(&(token_pair.1, token_pair.0, fee), &pool_contract);
@@ -64,18 +65,19 @@ impl<T: Storage<data::Data>> Factory for T {
     fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee: u32) -> Option<AccountId> {
         self.data::<data::Data>()
             .get_pool
-            .get(&(token_a, (token_b, fee)))
+            .get(&(token_a, token_b, fee))
     }
 
     #[modifiers(only_owner)]
-    fn set_owner(&mut self, _owner: AccountId) -> Result<(), FactoryError> {
-        self._emit_owner_changed_event(self.data::<data::Data>().owner, _owner);
-        self.data::<data::Data>().owner = _owner;
+    fn set_owner(&mut self, owner: AccountId) -> Result<(), FactoryError> {
+        let previous_owner = self.data::<data::Data>().owner;
+        self._emit_owner_changed_event(previous_owner, owner);
+        self.data::<data::Data>().owner = owner;
         Ok(())
     }
 
     #[modifiers(only_owner)]
-    fn enable_fee_amount(&self, fee: u32, tick_spacing: i32) -> Result<(), FactoryError> {
+    fn enable_fee_amount(&mut self, fee: u32, tick_spacing: i32) -> Result<(), FactoryError> {
         if fee < 1000000 {
             return Err(FactoryError::FeeTooBig);
         }
@@ -85,15 +87,15 @@ impl<T: Storage<data::Data>> Factory for T {
             return Err(FactoryError::TickSpacingOutOfBonds);
         }
 
-        if tick_spacing == 0 {
-            return Err(FactoryError::ZeroTickSpacing);
+        if self.get_fee_amount_tick_spacing(fee).unwrap() != 0 {
+            return Err(FactoryError::NonZeroTickSpacing);
         }
-        *self.fee_amount_tick_spacing.entry(fee).or_insert(0) = tick_spacing;
-        self._emit_fee_amount_enabled(fee, tick_spacing);
+        self.data::<data::Data>().fee_amount_tick_spacing.insert(&fee, &tick_spacing);
+        self._emit_fee_amount_enabled_event(fee, tick_spacing);
         Ok(())
     }
 
-    fn fee_amount_tick_spacing(&self, fee: u32) -> Option<i32> {
+    fn get_fee_amount_tick_spacing(&self, fee: u32) -> Option<i32> {
         self.data::<data::Data>().fee_amount_tick_spacing.get(&fee)
     }
 

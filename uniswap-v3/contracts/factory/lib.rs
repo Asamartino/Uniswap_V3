@@ -106,13 +106,14 @@ pub mod factory {
         }
     }
 
-    impl Ownable for PoolContract {}
+    impl Ownable for FactoryContract {}
 
     impl FactoryContract {
         #[ink(constructor)]
         pub fn new(fee_to_setter: AccountId, pool_code_hash: Hash) -> Self {
             ink_lang::codegen::initialize_contract(|instance: &mut Self| {
                 instance.factory.pool_contract_code_hash = pool_code_hash;
+                instance._init_with_owner(caller);
                 instance.factory.fee_to_setter = fee_to_setter;
                 instance.factory.fee_to = ZERO_ADDRESS.into();
             })

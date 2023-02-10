@@ -1,4 +1,4 @@
-use openbrush::traits::AccountId;
+use openbrush::{contracts::traits::ownable::*, traits::AccountId};
 
 #[openbrush::wrapper]
 pub type FactoryRef = dyn Factory;
@@ -19,13 +19,13 @@ pub trait Factory {
     fn set_owner(&mut self, _owner: AccountId) -> Result<(), FactoryError>;
 
     #[ink(message)]
-    fn enable_fee_amount(&self, fee: u32, tick_spacing: i32) -> Result<(), FactoryError>;
+    fn enable_fee_amount(&mut self, fee: u32, tick_spacing: i32) -> Result<(), FactoryError>;
 
     #[ink(message)]
-    fn fee_amount_tick_spacing(&self, fee: u32) -> Option<i32>;
+    fn get_fee_amount_tick_spacing(&self, fee: u32) -> Option<i32>;
 
     #[ink(message)]
-    fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee:u32) -> Option<AccountId>;
+    fn get_pool(&self, token_a: AccountId, token_b: AccountId, fee: u32) -> Option<AccountId>;
 
     // Events
     fn _emit_owner_changed_event(&self, _original_owner: AccountId, _new_owner: AccountId) {}
@@ -47,8 +47,16 @@ pub enum FactoryError {
     IdenticalAddresses,
     ZeroAddress,
     ZeroTickSpacing,
+    NonZeroTickSpacing,
     FeeTooBig,
     TickSpacingOutOfBonds,
     NoTickSpacing,
     PoolInstantiationFailed,
+    OwnableError(OwnableError),
+}
+
+impl From<OwnableError> for FactoryError {
+    fn from(error: OwnableError) -> Self {
+        FactoryError::OwnableError(error)
+    }
 }
