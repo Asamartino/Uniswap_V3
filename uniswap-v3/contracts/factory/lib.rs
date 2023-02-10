@@ -12,8 +12,8 @@ pub mod factory {
         contracts::ownable::*,
         traits::{Storage, ZERO_ADDRESS},
     };
-    use pool_contract::pool::PoolrContractRef;
-    use uniswap_v2::{impls::factory::*, traits::factory::*};
+    use pool_contract::pool::PoolContractRef;
+    use uniswap_v3::{impls::factory::*, traits::factory::*};
 
     #[ink(event)]
     pub struct PoolCreated {
@@ -49,8 +49,8 @@ pub mod factory {
         factory: data::Data,
     }
 
-    impl Factory for FactoryContract {
-        default fn _fee_amount_enabled(&self, fee: u24, tick_spacing: i24) {
+    impl FactoryContract {
+        default fn _fee_amount_enabled(&self, fee: u32, tick_spacing: i32) {
             EmitEvent::<FactoryContract>::emit_event(self.env(), FeeEnabled { fee, tick_spacing })
         }
 
@@ -113,6 +113,7 @@ pub mod factory {
         pub fn new(fee_to_setter: AccountId, pool_code_hash: Hash) -> Self {
             ink_lang::codegen::initialize_contract(|instance: &mut Self| {
                 instance.factory.pool_contract_code_hash = pool_code_hash;
+                let caller = instance.env().caller();
                 instance._init_with_owner(caller);
                 instance.factory.fee_to_setter = fee_to_setter;
                 instance.factory.fee_to = ZERO_ADDRESS.into();
