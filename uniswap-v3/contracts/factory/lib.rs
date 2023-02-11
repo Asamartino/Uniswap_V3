@@ -47,13 +47,11 @@ pub mod factory {
     pub struct FactoryContract {
         #[storage_field]
         factory: data::Data,
+        #[storage_field]
+        ownable: ownable::Data,
     }
 
     impl FactoryContract {
-        default fn _fee_amount_enabled(&self, fee: u32, tick_spacing: i32) {
-            EmitEvent::<FactoryContract>::emit_event(self.env(), FeeEnabled { fee, tick_spacing })
-        }
-
         fn _emit_create_pool_event(
             &self,
             token_0: AccountId,
@@ -84,16 +82,16 @@ pub mod factory {
             )
         }
 
-        fn _emit_fee_amount_enabled_event(&self, _fee: u32, _tick_spacing: i32) {
+        fn _emit_fee_amount_enabled_event(&self, fee: u32, tick_spacing: i32) {
             EmitEvent::<FactoryContract>::emit_event(
                 self.env(),
                 FeeAmountEnabled { fee, tick_spacing },
             )
         }
 
-        default fn _instantiate_pool(
+        fn _instantiate_pool(
             &mut self,
-            _salt_bytes: &[u8],
+            salt_bytes: &[u8],
         ) -> Result<AccountId, FactoryError> {
             let pool_hash = self.factory.pool_contract_code_hash;
             let pool = PoolContractRef::new()
@@ -110,13 +108,11 @@ pub mod factory {
 
     impl FactoryContract {
         #[ink(constructor)]
-        pub fn new(fee_to_setter: AccountId, pool_code_hash: Hash) -> Self {
+        pub fn new(pool_code_hash: Hash) -> Self {
             ink_lang::codegen::initialize_contract(|instance: &mut Self| {
                 instance.factory.pool_contract_code_hash = pool_code_hash;
                 let caller = instance.env().caller();
                 instance._init_with_owner(caller);
-                instance.factory.fee_to_setter = fee_to_setter;
-                instance.factory.fee_to = ZERO_ADDRESS.into();
             })
         }
     }
