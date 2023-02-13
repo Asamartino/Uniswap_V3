@@ -11,7 +11,6 @@ pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
-
 pub struct TickInfo {
     // the total position liquidity that references this tick
     pub liquidity_gross: u128,
@@ -34,6 +33,8 @@ pub struct TickInfo {
     pub initialized: bool,
 }
 
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct PositionInfo {
     // the amount of liquidity owned by this position
     pub liquidity: u128,
@@ -45,7 +46,8 @@ pub struct PositionInfo {
     pub token_owed_1: u128,
 }
 
-
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Slot {
         // the current price
         pub sqrt_price_x96: u128,
@@ -64,12 +66,16 @@ pub struct Slot {
         pub unlocked: bool,
 }
 
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct ProtocolFees {
     pub token0: u128,
     pub token1: u128,
  }
 
 
+
+#[derive(Default, Debug)]
 pub  struct Observation {
     // the block timestamp of the observation
     pub block_timestamp: u32,
@@ -80,6 +86,9 @@ pub  struct Observation {
     // whether or not the observation is initialized
     pub initialized: bool,
 }
+
+#[derive(Default, Debug)]
+#[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Data {
     pub factory: AccountId,
     pub token_0: AccountId,
@@ -92,8 +101,8 @@ pub struct Data {
     pub fee_growth_global_1x128: u128,
     pub protocol_fees: ProtocolFees,
     pub liquidity: u128,
-    pub ticks: Mapping<i32, TickInfo>,
+    // pub ticks: Mapping<i32, TickInfo>,
     pub tick_bitmap: Mapping<i32, u128>,
-    pub position: Mapping<u32, PositionInfo>,
-    pub observation_array: [Observation;65535],
+    // pub position: Mapping<u32, PositionInfo>,
+    // pub observation_array: [Observation;65535],
 }

@@ -13,10 +13,10 @@ pub trait Factory {
         fee: u32,
     ) -> Result<AccountId, FactoryError>;
 
-    fn _instantiate_pool(&mut self, _salt_bytes: &[u8]) -> Result<AccountId, FactoryError>;
+    fn _instantiate_pool(&mut self, salt_bytes: &[u8]) -> Result<AccountId, FactoryError>;
 
     #[ink(message)]
-    fn set_owner(&mut self, _owner: AccountId) -> Result<(), FactoryError>;
+    fn set_owner(&mut self, new_owner: AccountId) -> Result<(), FactoryError>;
 
     #[ink(message)]
     fn enable_fee_amount(&mut self, fee: u32, tick_spacing: i32) -> Result<(), FactoryError>;

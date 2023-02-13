@@ -6,7 +6,7 @@ use ink_env::hash::Blake2x256;
 
 use openbrush::{
     contracts::ownable::*,
-    modifiers,
+    modifiers, modifier_definition,
     traits::{AccountId, Storage, ZERO_ADDRESS},
 };
 
@@ -69,10 +69,10 @@ impl<T: Storage<data::Data> + Storage<ownable::Data>> Factory for T {
     }
 
     #[modifiers(only_owner)]
-    fn set_owner(&mut self, owner: AccountId) -> Result<(), FactoryError> {
+    fn set_owner(&mut self, new_owner: AccountId) -> Result<(), FactoryError> {
         let previous_owner = self.data::<data::Data>().owner;
-        self._emit_owner_changed_event(previous_owner, owner);
-        self.data::<data::Data>().owner = owner;
+        self._emit_owner_changed_event(previous_owner, new_owner);
+        self.data::<data::Data>().owner = new_owner;
         Ok(())
     }
 
