@@ -14,7 +14,7 @@ pub mod wnative {
             String,
         },
     };
-    use uniswap_v2::impls::wnative::*;
+    use uniswap_v3::impls::wnative::*;
 
     #[ink(event)]
     pub struct Transfer {

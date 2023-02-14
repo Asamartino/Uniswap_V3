@@ -11,7 +11,7 @@ scale = { package = "parity-scale-codec", version = "3", default-features = fals
 scale-info = { version = "2.3", default-features = false, features = ["derive"], optional = true }
 
 openbrush = { git = "https://github.com/727-Ventures/openbrush-contracts", version = "3.0.0-beta.1", default-features = false, features = ["psp22"] }
-uniswap_v2 = { path = "../../logics", default-features = false }
+uniswap_v3 = { path = "../../logics", default-features = false }
 
 [lib]
 name = "wnative_contract"
@@ -26,7 +26,7 @@ std = [
     "scale-info",
     "scale-info/std",
     "openbrush/std",
-    "uniswap_v2/std"
+    "uniswap_v3/std"
 ]
 ink-as-dependency = []
 
