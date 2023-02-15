@@ -18,7 +18,16 @@ use openbrush::{
         Timestamp,
     }
 };
-
+pub trait Internal {
+    fn _emit_initialize_event(&self ,sqrt_price_x96: u128, tick: i32) -> Result<(), PoolError>;
+    fn _emit_mint_event(&self, sender:AccountId, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: Balance, amount0: Balance, amount1: Balance) -> Result<(), PoolError>;
+    fn _emit_collect_event(&self, sender:AccountId, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount0: Balance, amount1: Balance) -> Result<(), PoolError>;
+    fn _emit_burn_event(&self, sender:AccountId, tick_lower: i32, tick_upper: i32, amount: Balance, amount0: Balance, amount1: Balance) -> Result<(), PoolError>;
+    fn _emit_swap_event(&self, sender:AccountId, recipient: AccountId, amount0: Balance, amount1: Balance, sqrt_price_x96: u128, liquidity: u128, tick: i32) -> Result<(), PoolError>;
+    fn _emit_flash_event(&self, sender:AccountId, recipient: AccountId,amount0: Balance, amount1: Balance, paid0: u128, paid1: u128) -> Result<(), PoolError>;
+    fn _emit_set_fee_protocol_event(&self, fee_protocol0_old: u8,fee_protocol1_old: u8, fee_protocol0_new: u8, fee_protocol1_new: u8,) -> Result<(), PoolError>;
+    fn _emit_collect_protocol_event(&self, sender:AccountId, recipient: AccountId, amount0: Balance, amount1: Balance) -> Result<(), PoolError>;
+}
 impl<T: Storage<data::Data> // + Storage<psp22::Data> + Storage<ownable::Data>
 > Pool for T {
     fn initialize(

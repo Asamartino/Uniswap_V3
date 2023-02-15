@@ -145,14 +145,90 @@ pub mod pool {
             }
         }
     
-
-    impl PoolContract {
-        #[ink(constructor)]
-        pub fn new() -> Self {
-            ink_lang::codegen::initialize_contract(|instance: &mut Self| {})
+    impl pool::Internal for PoolContract{
+        fn _emit_initialize_event(&self ,sqrt_price_x96: u128, tick: i32) {
+            self.env().emit_event(Initialize {
+                sqrt_price_x96,
+                tick,
+            });
+        }        
+        fn _emit_mint_event(&self, sender:AccountId, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: Balance, amount0: Balance, amount1: Balance) {
+            self.env().emit_event(Mint {
+                sender,
+                recipient,
+                tick_lower,
+                tick_upper,
+                amount,
+                amount0,
+                amount1,
+            });
+        }
+        fn _emit_collect_event(&self, sender:AccountId, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount0: Balance, amount1: Balance){
+            self.env().emit_event(Collect {
+                sender,
+                recipient,
+                tick_lower,
+                tick_upper,
+                amount0,
+                amount1,
+            });
+        }
+        fn _emit_burn_event(&self, sender:AccountId, tick_lower: i32, tick_upper: i32, amount: Balance, amount0: Balance, amount1: Balance) {
+            self.env().emit_event(Burn {
+                sender,
+                tick_lower,
+                tick_upper,
+                amount,
+                amount0,
+                amount1,
+            });
+        }
+        fn _emit_swap_event(&self, sender:AccountId, recipient: AccountId, amount0: Balance, amount1: Balance, sqrt_price_x96: u128, liquidity: u128, tick: i32) {
+            self.env().emit_event(Swap {
+                sender,
+                recipient,
+                amount0,
+                amount1,
+                sqrt_price_x96,
+                liquidity,
+                tick,
+            });
+        }
+        fn _emit_flash_event(&self, sender:AccountId, recipient: AccountId,amount0: Balance, amount1: Balance, paid0: u128, paid1: u128) {
+            self.env().emit_event(Flash {
+                sender,
+                recipient,
+                amount0,
+                amount1,
+                paid0,
+                paid1,
+            });
+        }
+        fn _emit_set_fee_protocol_event(&self, fee_protocol0_old: u8,fee_protocol1_old: u8, fee_protocol0_new: u8, fee_protocol1_new: u8,) {
+            self.env().emit_event(SetFeeProtocol {
+                fee_protocol0_old,
+                fee_protocol1_old,
+                fee_protocol0_new,
+                fee_protocol1_new,
+            });
+        }
+        fn _emit_collect_protocol_event(&self, sender:AccountId, recipient: AccountId, amount0: Balance, amount1: Balance) {
+            self.env().emit_event(CollectProtocol {
+                sender,
+                recipient,
+                amount0,
+                amount1,
+            });
         }
     }
-
+        impl Pool for PoolContract {}
+        impl PoolContract {
+            #[ink(constructor)]
+            pub fn new() -> Self {
+                ink_lang::codegen::initialize_contract(|instance: &mut Self| {})
+            }
+        }
+    }
     // impl Pool for PoolContract {
         // fn _emit_transfer_event(
         //     &self,
@@ -229,6 +305,4 @@ pub mod pool {
         //     self._emit_transfer_event(Some(from), Some(to), amount);
         //     Ok(())
         // }
-    }      
-
 }

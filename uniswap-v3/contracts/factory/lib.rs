@@ -89,10 +89,7 @@ pub mod factory {
             )
         }
 
-        fn _instantiate_pool(
-            &mut self,
-            salt_bytes: &[u8],
-        ) -> Result<AccountId, FactoryError> {
+        fn _instantiate_pool(&mut self, salt_bytes: &[u8]) -> Result<AccountId, FactoryError> {
             let pool_hash = self.factory.pool_contract_code_hash;
             let pool = PoolContractRef::new()
                 .endowment(0)
