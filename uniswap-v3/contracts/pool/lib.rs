@@ -31,24 +31,94 @@ pub mod pool {
         #[storage_field]
         pool: data::Data,
     }
-
+    #[ink(event]
+        pub struct Mint {
+            #[ink(topic)]
+            sender: AccountId,
+            owner: AccountId,
+            tick_lower: i32,
+            tick_upper: i32,
+            #[ink(topic)]
+            amount: Balance,
+            amount0: Balance,
+            amount1: Balance,
+        }
     #[ink(event)]
-    pub struct Transfer {
-        #[ink(topic)]
-        from: Option<AccountId>,
-        #[ink(topic)]
-        to: Option<AccountId>,
-        value: Balance,
-    }
-
-    #[ink(event)]
-    pub struct Approval {
-        #[ink(topic)]
+    pub struct Burn {
         owner: AccountId,
         #[ink(topic)]
-        spender: AccountId,
-        value: Balance,
+        tick_lower: i32,
+        tick_upper: i32,
+        #[ink(topic)]
+        amount: Balance,
+        amount0: Balance,
+        amount1: Balance,
     }
+    #[ink(event)]
+    pub struct Collect {
+        owner: AccountId,
+        #[ink(topic)]
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount0: Balance,
+        amount1: Balance,
+    }
+    #[ink(event)]
+    pub struct Swap {
+        sender: AccountId,
+        recipient: AccountId,
+        amount0: Balance,
+        amount1: Balance,
+        sqrt_price_x96: u128,
+        liquidity: u128,
+        tick: i32,
+    }
+    #[ink(event)]
+    pub struct Flash{
+        sender: AccountId,
+        recipient: AccountId,
+        amount0: Balance,
+        amount1: Balance,
+        paid0: Balance,
+        paid1: Balance,
+    }
+    #[ink(event)]
+    pub struct IncreaseObservationCardinalityNext{
+        observation_cardinality_next_old: u16,
+        observation_cardinality_next_new: u16,
+    }
+    #[ink(event)]
+    pub struct SetFeeProtocol{
+        fee_protocol0_old: u8,
+        fee_protocol1_old: u8,
+        fee_protocol0_new: u8,
+        fee_protocol1_new: u8,
+    }
+    #[ink(event)]
+    pub struct CollectProtocol{
+        sender: AccountId,
+        recipient: AccountId,
+        amount0: Balance,
+        amount1: Balance,
+    }
+    // #[ink(event)]
+    // pub struct Transfer {
+    //     #[ink(topic)]
+    //     from: Option<AccountId>,
+    //     #[ink(topic)]
+    //     to: Option<AccountId>,
+    //     value: Balance,
+    // }
+
+    // #[ink(event)]
+    // pub struct Approval {
+    //     #[ink(topic)]
+    //     owner: AccountId,
+    //     #[ink(topic)]
+    //     spender: AccountId,
+    //     value: Balance,
+    // }
 
     impl PSP22 for PoolContract {
             #[ink(message)]
@@ -83,7 +153,7 @@ pub mod pool {
         }
     }
 
-    impl Pool for PoolContract {
+    // impl Pool for PoolContract {
         // fn _emit_transfer_event(
         //     &self,
         //     from: Option<AccountId>,
