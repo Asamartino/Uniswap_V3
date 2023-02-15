@@ -51,7 +51,7 @@ pub mod factory {
         ownable: ownable::Data,
     }
 
-    impl FactoryContract {
+    impl Factory for FactoryContract {
         fn _emit_create_pool_event(
             &self,
             token_0: AccountId,

@@ -1,3 +1,6 @@
+use crate::impls::pool::data_struct::*;
+
+
 use openbrush::{
     contracts::{
         reentrancy_guard::*,
@@ -51,6 +54,7 @@ pub trait Pool {
     
     #[ink(message)]
     fn get_tick_bitmap(&self, entry: i32) -> Option<u128>;
+   
 
     // #[ink(message)]
     // fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<Balance, PoolError>;
@@ -58,8 +62,8 @@ pub trait Pool {
     // #[ink(message)]
     // fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<Balance, PoolError>;
 
-    // #[ink(message)]
-    // fn get_position(&self, owner: AccountId, tick_lower: i32, tick_upper: i32)  -> Option<PositionInfo> {}
+    #[ink(message)]
+    fn get_position(&self, owner: AccountId, tick_lower: i32, tick_upper: i32) -> Option<PositionInfo>;
 
     #[ink(message)]
     fn _check_ticks(&self,tick_lower: i32, tick_upper: i32) -> bool;

@@ -1,4 +1,6 @@
 use crate::traits::factory::FactoryRef;
+use crate::impls::pool::data_struct::*;
+use ink_env::hash::Blake2x256;
 
 pub use crate::{
     impls::pool::*,
@@ -78,6 +80,7 @@ impl<T: Storage<data::Data> // + Storage<psp22::Data> + Storage<ownable::Data>
         self.data::<data::Data>().tick_bitmap.get(&entry)
     }
 
+
     // fn get_tick_spacing(&self) -> i32 {
     //     self.data::<data::Data>().tick_spacing
     // }
@@ -116,9 +119,9 @@ impl<T: Storage<data::Data> // + Storage<psp22::Data> + Storage<ownable::Data>
         
     // }
 
-    // fn get_position(&self, owner: AccountId, tick_lower: i32, tick_upper: i32)  -> Option<PositionInfo> {
-    //     self.data::<data::Data>().positions[Self::env().hash_encoded::<Blake2x256,_>(&(owner, tick_lower, tick_upper))]
-    // }
+    fn get_position(&self, owner: AccountId, tick_lower: i32, tick_upper: i32)  -> Option<PositionInfo> {
+        self.data::<data::Data>().positions.get(&Self::env().hash_encoded::<Blake2x256,_>(&(owner, tick_lower, tick_upper)))
+    }
     
     // fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<Balance, PoolError>{
     //     if !self._check_ticks(tick_lower,tick_upper){
