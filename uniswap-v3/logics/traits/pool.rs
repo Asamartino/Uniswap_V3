@@ -142,7 +142,7 @@ pub trait Pool {
     /// @notice The amounts of token0 and token1 that are owed to the protocol
     /// @dev Protocol fees will never exceed uint128 max in either token
     #[ink(message)]
-    fn protocol_fees(&self) -> (ProtocolFees);
+    fn protocol_fees(&self) -> ProtocolFees;
 
     /// @notice The currently in range liquidity available to the pool
     /// @dev This value has no relationship to the total liquidity across all ticks
