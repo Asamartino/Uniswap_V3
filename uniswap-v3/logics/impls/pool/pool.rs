@@ -3,11 +3,13 @@ use crate::traits::factory::FactoryRef;
 use ink_env::hash::Blake2x256;
 use ink_prelude::vec::Vec;
 
-pub use crate::{impls::pool::*, traits::pool::*};
+use crate::helpers::transfer_helper::safe_transfer;
+use crate::{impls::pool::*, traits::pool::*};
 use openbrush::{
     contracts::{ownable::*, psp22::*, reentrancy_guard::*, traits::psp22::PSP22Ref},
     traits::{AccountId, Balance, Storage, Timestamp},
 };
+
 pub trait Internal {
     fn _emit_initialize_event(&self, sqrt_price_x96: u128, tick: i32);
     fn _emit_mint_event(
@@ -53,14 +55,11 @@ pub trait Internal {
         &self,
         sender: AccountId,
         recipient: AccountId,
-        amount0: Balance,
-        amount1: Balance,
+        amount0_requested: Balance,
+        amount1_requested: Balance,
     );
 }
-impl<
-        T: Storage<data::Data>, // + Storage<psp22::Data> + Storage<ownable::Data>
-    > Pool for T
-{
+impl<T: Storage<data::Data> + Internal> Pool for T {
     fn initialize(
         &mut self,
         token_0: AccountId,
@@ -105,11 +104,57 @@ impl<
     fn flash(
         &mut self,
         recipient: AccountId,
-        amount0: i128,
-        amount1: i128,
+        amount0: u128,
+        amount1: u128,
         data: Vec<u8>,
     ) -> Result<(), PoolError> {
         Ok(())
+    }
+    fn collect_protocol(
+        &mut self,
+        sender: AccountId,
+        recipient: AccountId,
+        amount0_requested: Balance,
+        amount1_requested: Balance,
+    ) -> Result<(Balance, Balance), PoolError> {
+        let caller = Self::env().caller();
+        let mut amount_0: Balance;
+        let mut amount_1: Balance;
+        let mut fee_0 = self.data::<data::Data>().fee0;
+        let mut fee_1 = self.data::<data::Data>().fee1;
+        let token_0 = self.data::<data::Data>().token_0;
+        let token_1 = self.data::<data::Data>().token_1;
+        if amount0_requested > fee_0 {
+            amount_0 = fee_0;
+        } else {
+            amount_0 = amount0_requested;
+        }
+        if amount1_requested > fee_1 {
+            amount_1 = fee_1;
+        } else {
+            amount_1 = amount1_requested;
+        }
+        if amount_0 > 0 {
+            if amount_0 == fee_0 {
+                amount_0 -= 1;
+            }
+            fee_0 -= amount_0;
+            safe_transfer(token_0, recipient, amount_0);
+        }
+        if amount_1 > 0 {
+            if amount_1 == fee_1 {
+                amount_1 -= 1;
+            }
+            fee_1 -= amount_1;
+            safe_transfer(token_1, recipient, amount_1);
+        }
+        self._emit_collect_protocol_event(sender, recipient, amount0_requested, amount1_requested);
+        Ok((amount_0, amount_1))
+    }
+    fn protocol_fees(&self) -> Result<(Balance, Balance), PoolError> {
+        let fee_0 = self.data::<data::Data>().fee0;
+        let fee_1 = self.data::<data::Data>().fee1;
+        Ok((fee_0, fee_1))
     }
 
     fn get_token_0(&self) -> AccountId {

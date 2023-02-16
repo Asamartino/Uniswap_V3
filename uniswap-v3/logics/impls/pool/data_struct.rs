@@ -63,12 +63,12 @@ pub struct Slot {
     pub unlocked: bool,
 }
 
-#[derive(Default, Debug)]
-#[openbrush::upgradeable_storage(STORAGE_KEY)]
-pub struct ProtocolFees {
-    pub token0: u128,
-    pub token1: u128,
-}
+// #[derive(Default, Debug)]
+// #[openbrush::upgradeable_storage(STORAGE_KEY)]
+// pub struct ProtocolFees {
+//     pub token0: Balance,
+//     pub token1: Balance,
+// }
 
 #[derive(Default, Debug, Clone, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
