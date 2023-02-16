@@ -66,14 +66,6 @@ pub trait Pool {
     ) -> Result<(u128, u128), PoolError>;
 
     #[ink(message)]
-    fn burn(
-        &mut self,
-        tick_lower: i32,
-        tick_upper: i32,
-        amount: i128,
-    ) -> Result<(u128, u128), PoolError>;
-
-    #[ink(message)]
     fn swap(
         &mut self,
         recipient: AccountId,
@@ -106,7 +98,7 @@ pub trait Pool {
 
 
     #[ink(message)]
-    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,i128,i128), PoolError>;
+    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,Balance, Balance), PoolError>;
 
     #[ink(message)]
     fn get_position(
@@ -118,6 +110,12 @@ pub trait Pool {
 
     #[ink(message)]
     fn _check_ticks(&self, tick_lower: i32, tick_upper: i32) -> bool;
+
+    #[ink(message)]
+    fn burn(&mut self, tick_lower: i32, tick_upper: i32, amount: u128) -> Result<(Balance,Balance), PoolError>;
+
+    fn _emit_burn_event(&self, _owner: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance,  _amount_0: Balance, _amount_1: Balance);
+
 
     // #[ink(message)]
     // fn _update_position(&self, onwer: AccountId, tick_lower: i32, tick_upper: i32, liquidity_delta: i128, tick: i32) -> Result<Balance, PoolError>;
@@ -133,4 +131,7 @@ pub enum PoolError {
     M0,
     M1,
     ModifyPosition,
+    BurningInsuficientBalance,
+    CheckedNeg0,
+    CheckedNeg1,
 }

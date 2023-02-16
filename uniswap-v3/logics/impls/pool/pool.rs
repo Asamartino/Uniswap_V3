@@ -39,7 +39,7 @@ pub trait Internal {
         amount0_requested: Balance,
         amount1_requested: Balance,
     );
-    fn _emit_burn_event(&self, tick_lower: i32, tick_upper: i32, amount: Balance);
+    
     fn _emit_swap_event(
         &self,
         recipient: AccountId,
@@ -94,14 +94,6 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         Ok((0, 0))
     }
 
-    fn burn(
-        &mut self,
-        tick_lower: i32,
-        tick_upper: i32,
-        amount: i128,
-    ) -> Result<(u128, u128), PoolError> {
-        Ok((0, 0))
-    }
 
     fn swap(
         &mut self,
@@ -246,7 +238,8 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         if amount == 0 {
             return Err(PoolError::ZeroAmmount)
         }
-        let amount_i128 = amount as i128;
+        //need to implement a better solution for conversion
+        let amount_i128 = -(amount as i128);
      
         let ( _ ,  amount_0_int, amount_1_int) = self._modify_position( recipient, tick_lower, tick_upper, amount_i128)?;
 
@@ -294,20 +287,16 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             .get(&Self::env().hash_encoded::<Blake2x256, _>(&(owner, tick_lower, tick_upper)))
     }
 
-    // fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<Balance, PoolError>{
-    //     if !self._check_ticks(tick_lower,tick_upper){
-    //         return Err(PoolError::TickError)
-    //     }
 
-    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,i128,i128), PoolError>{
+    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,Balance, Balance), PoolError>{
         if !self._check_ticks(tick_lower,tick_upper){
             return Err(PoolError::TickError)
         }
         let slot0 = self.get_slot_0();
         // need to implement _updatePosition
 
-        let amount_0: i128 = 0;
-        let amount_1: i128 = 0;
+        let amount_0: u128 = 0;
+        let amount_1: u128 = 0;
 
         // if liquidity_delta != 0{
         //     if slot0.tick < tick_lower{
@@ -315,11 +304,45 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         //     }
         // }
 
-        let position = PositionInfo { liquidity: 0, fee_growth_inside_0_last_x128: 0, fee_growth_inside_1_last_x128:0, tokens_owed_0: 0, token_owed_1: 0};
+        let position = PositionInfo { liquidity: 0, fee_growth_inside_0_last_x128: 0, fee_growth_inside_1_last_x128:0, tokens_owed_0: 0, tokens_owed_1: 0};
         Ok((position, amount_0, amount_1))
     }
 
     fn _check_ticks(&self, tick_lower: i32, tick_upper: i32) -> bool {
         tick_lower < tick_upper && tick_lower >= i32::MIN && tick_upper <= i32::MAX
     }
+
+
+    fn burn(&mut self, tick_lower: i32, tick_upper: i32, amount: u128) -> Result<(Balance,Balance), PoolError>{
+
+        let amount_i128 = amount as i128;
+
+        let ( position,  amount_0_int, amount_1_int) = self._modify_position(Self::env().caller() , tick_lower, tick_upper, amount_i128)?;
+    
+        let amount_0: u128 = amount_0_int.checked_neg().ok_or(PoolError::CheckedNeg0)?;
+        let amount_1: u128 = amount_1_int.checked_neg().ok_or(PoolError::CheckedNeg1)?;
+
+        if amount_0 > 0 || amount_1 > 0 {
+            self.data::<data::Data>()
+            .positions
+            .get(&Self::env().hash_encoded::<Blake2x256, _>(&(Self::env().caller(), tick_lower, tick_upper))).unwrap()
+            .tokens_owed_0 = position.tokens_owed_0 + amount_0;
+            
+            self.data::<data::Data>()
+            .positions
+            .get(&Self::env().hash_encoded::<Blake2x256, _>(&(Self::env().caller(), tick_lower, tick_upper))).unwrap()
+            .tokens_owed_1 = position.tokens_owed_1 + amount_1;
+            
+        } else{
+            return Err(PoolError::BurningInsuficientBalance)
+        }
+
+        self._emit_burn_event(Self::env().caller(), tick_lower, tick_upper, amount, amount_0, amount_1);
+        Ok((amount_0,amount_1))
+
+    }
+
+    default fn _emit_burn_event(&self, _sender: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance, _amount_0: Balance, _amount_1: Balance){}
+
+
 }
