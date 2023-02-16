@@ -39,8 +39,8 @@ pub struct PositionInfo {
     pub fee_growth_inside_0_last_x128: u128,
     pub fee_growth_inside_1_last_x128: u128,
     // the fees owed to the position owner in token0/token1
-    pub tokens_owed_0: u128,
-    pub tokens_owed_1: u128,
+    pub tokens_owed_0: Balance,
+    pub tokens_owed_1: Balance,
 }
 
 #[derive(Default, Debug, Clone, Copy, SpreadLayout, SpreadAllocate,  scale::Encode, scale::Decode )]

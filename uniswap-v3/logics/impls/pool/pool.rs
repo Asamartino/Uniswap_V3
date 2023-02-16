@@ -3,7 +3,7 @@ use crate::traits::factory::FactoryRef;
 use ink_env::hash::Blake2x256;
 use ink_prelude::vec::Vec;
 
-use crate::helpers::transfer_helper::safe_transfer;
+use crate::{ensure, helpers::transfer_helper::safe_transfer};
 use crate::{impls::pool::*, traits::pool::*};
 use openbrush::{
     contracts::{ownable::*, psp22::*, reentrancy_guard::*, traits::psp22::PSP22Ref},
@@ -88,10 +88,46 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         recipient: AccountId,
         tick_lower: i32,
         tick_upper: i32,
-        amount0_requested: i128,
-        amount1_requested: i128,
-    ) -> Result<(u128, u128), PoolError> {
-        Ok((0, 0))
+        amount0_requested: Balance,
+        amount1_requested: Balance,
+    ) -> Result<(Balance, Balance), PoolError> {
+        let mut amount_0: Balance;
+        let mut amount_1: Balance;
+        let token_0 = self.data::<data::Data>().token_0;
+        let token_1 = self.data::<data::Data>().token_1;
+        let caller = Self::env().caller();
+        let mut owned_amount_0 = 0;
+        let mut owned_amount_1 = 0;
+        let position_info = self.get_position(caller, tick_lower, tick_upper);
+        if let Some(info) = position_info {
+            owned_amount_0 = info.tokens_owed_0;
+            owned_amount_1 = info.tokens_owed_1;
+        }
+
+        if amount0_requested > owned_amount_0 {
+            amount_0 = owned_amount_0;
+        } else {
+            amount_0 = amount0_requested;
+        }
+        if amount1_requested > owned_amount_1 {
+            amount_1 = owned_amount_1;
+        } else {
+            amount_1 = amount1_requested;
+        }
+        if amount_0 > 0 {
+            owned_amount_0 -= amount_0;
+            safe_transfer(token_0, recipient, amount_0);
+        } else {
+            // ensure!(amount_0 == 0, PoolError);
+        }
+        if amount_1 > 0 {
+            owned_amount_1 -= amount_1;
+            safe_transfer(token_1, recipient, amount_1);
+        } else {
+            // ensure!(amount_1 == 0, PoolError);
+        }
+        self._emit_collect_event(recipient, tick_lower, tick_upper, amount_0, amount_1);
+        Ok((amount_0, amount_1))
     }
 
 
@@ -155,9 +191,10 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             fee_1 -= amount_1;
             safe_transfer(token_1, recipient, amount_1);
         }
-        self._emit_collect_protocol_event(sender, recipient, amount0_requested, amount1_requested);
+        self._emit_collect_protocol_event(caller, recipient, amount_0, amount_1);
         Ok((amount_0, amount_1))
     }
+
     fn protocol_fees(&self) -> Result<(Balance, Balance), PoolError> {
         let fee_0 = self.data::<data::Data>().fee0;
         let fee_1 = self.data::<data::Data>().fee1;

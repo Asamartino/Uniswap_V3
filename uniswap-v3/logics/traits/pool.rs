@@ -61,9 +61,9 @@ pub trait Pool {
         recipient: AccountId,
         tick_lower: i32,
         tick_upper: i32,
-        amount0_requested: i128,
-        amount1_requested: i128,
-    ) -> Result<(u128, u128), PoolError>;
+        amount0_requested: Balance,
+        amount1_requested: Balance,
+    ) -> Result<(Balance, Balance), PoolError>;
 
     #[ink(message)]
     fn swap(
