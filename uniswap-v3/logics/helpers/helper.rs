@@ -1,29 +1,19 @@
-// use crate::{
-//     helpers::math::casted_mul,
-//     traits::pool::PoolRef,
-// };
-// use ink_env::hash::{
-//     Blake2x256,
-//     HashOutput,
-// };
-// use ink_prelude::vec::Vec;
-// use openbrush::traits::{
-//     AccountId,
-//     AccountIdExt,
-//     Balance,
-// };
+use crate::{helpers::math::casted_mul, traits::pool::PoolRef};
+use ink_env::hash::{Blake2x256, HashOutput};
+use ink_prelude::vec::Vec;
+use openbrush::traits::{AccountId, AccountIdExt, Balance};
 
 // /// Evaluate `$x:expr` and if not true return `Err($y:expr)`.
 // ///
 // /// Used as `ensure!(expression_to_ensure, expression_to_return_on_false)`.
-// #[macro_export]
-// macro_rules! ensure {
-//     ( $x:expr, $y:expr $(,)? ) => {{
-//         if !$x {
-//             return Err($y.into())
-//         }
-//     }};
-// }
+#[macro_export]
+macro_rules! ensure {
+    ( $x:expr, $y:expr $(,)? ) => {{
+        if !$x {
+            return Err($y.into());
+        }
+    }};
+}
 
 // pub fn sort_tokens(
 //     token_a: AccountId,
