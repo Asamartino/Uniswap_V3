@@ -79,7 +79,6 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         amount0_requested: Balance,
         amount1_requested: Balance,
     ) -> Result<(Balance, Balance), PoolError> {
-        // mapping(bytes32 => Position.Info) public override positions;
         let mut amount_0: Balance;
         let mut amount_1: Balance;
         let token_0 = self.data::<data::Data>().token_0;
