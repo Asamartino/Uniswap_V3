@@ -6,7 +6,7 @@ use ink_env::hash::Blake2x256;
 
 use openbrush::{
     contracts::ownable::*,
-    modifiers, modifier_definition,
+    modifier_definition, modifiers,
     traits::{AccountId, Storage, ZERO_ADDRESS},
 };
 
@@ -90,7 +90,9 @@ impl<T: Storage<data::Data> + Storage<ownable::Data>> Factory for T {
         if self.get_fee_amount_tick_spacing(fee).unwrap() != 0 {
             return Err(FactoryError::NonZeroTickSpacing);
         }
-        self.data::<data::Data>().fee_amount_tick_spacing.insert(&fee, &tick_spacing);
+        self.data::<data::Data>()
+            .fee_amount_tick_spacing
+            .insert(&fee, &tick_spacing);
         self._emit_fee_amount_enabled_event(fee, tick_spacing);
         Ok(())
     }
