@@ -110,6 +110,9 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
     ) -> Result<(), PoolError> {
         Ok(())
     }
+
+    // ProtocolOwnerActions
+    // TODO: add fee protocol
     fn collect_protocol(
         &mut self,
         sender: AccountId,
