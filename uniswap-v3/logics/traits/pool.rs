@@ -1,5 +1,5 @@
 use crate::impls::pool::data_struct::*;
-
+use ink_prelude::vec::Vec;
 
 use openbrush::{
     contracts::{
@@ -54,8 +54,42 @@ pub trait Pool {
     
     #[ink(message)]
     fn get_tick_bitmap(&self, entry: i32) -> Option<u128>;
-   
 
+    #[ink(message)]
+    fn collect(
+        &mut self,
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount0_requested: i128,
+        amount1_requested: i128,
+    ) -> Result<(u128, u128),PoolError>;
+
+    #[ink(message)]
+    fn burn(
+        &mut self,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: i128,
+    ) -> Result<(u128, u128), PoolError>;
+
+    #[ink(message)]
+    fn swap(
+        &mut self,
+        recipient: AccountId,
+        zero_for_one: bool,
+        amount_specified: i128,
+        sqrt_price_limit_x96: u128,
+    ) -> Result<(u128, u128),PoolError>;
+        #[ink(message)]
+    fn flash(
+        &mut self,
+        recipient: AccountId,
+        amount0: i128,
+        amount1: i128,
+        data: Vec<u8>,
+    ) -> Result<(), PoolError>;
+    
     // #[ink(message)]
     // fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<Balance, PoolError>;
 

@@ -1,6 +1,7 @@
 use crate::traits::factory::FactoryRef;
 use crate::impls::pool::data_struct::*;
 use ink_env::hash::Blake2x256;
+use ink_prelude::vec::Vec;
 
 pub use crate::{
     impls::pool::*,
@@ -20,7 +21,60 @@ use openbrush::{
         Timestamp,
     }
 };
-
+pub trait Internal {
+    fn _emit_initialize_event(&self, sqrt_price_x96: u128, tick: i32);
+    fn _emit_mint_event(
+        &self,
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: Balance,
+    );
+    fn _emit_collect_event(
+        &self,
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount0_requested: Balance,
+        amount1_requested: Balance,
+    );
+    fn _emit_burn_event(
+        &self,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: Balance,
+    );
+    fn _emit_swap_event(
+        &self,
+        recipient: AccountId,
+        zero_for_one: bool,
+        amount_specified: i128,
+        sqrt_price_limit_x96: u128,
+    );
+    fn _emit_flash_event(
+        &self,
+        sender: AccountId,
+        recipient: AccountId,
+        amount0: Balance,
+        amount1: Balance,
+        paid0: u128,
+        paid1: u128,
+    );
+    fn _emit_set_fee_protocol_event(
+        &self,
+        fee_protocol0_old: u8,
+        fee_protocol1_old: u8,
+        fee_protocol0_new: u8,
+        fee_protocol1_new: u8,
+    );
+    fn _emit_collect_protocol_event(
+        &self,
+        sender: AccountId,
+        recipient: AccountId,
+        amount0: Balance,
+        amount1: Balance,
+    );
+}
 impl<T: Storage<data::Data> // + Storage<psp22::Data> + Storage<ownable::Data>
 > Pool for T {
     fn initialize(
@@ -34,7 +88,45 @@ impl<T: Storage<data::Data> // + Storage<psp22::Data> + Storage<ownable::Data>
         self.data::<data::Data>().fee = fee;
         Ok(())
     }
+    fn collect(
+        &mut self,
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount0_requested: i128,
+        amount1_requested: i128,
+    ) -> Result<(u128, u128),PoolError> {
+        Ok((0, 0))
+    }
 
+    fn burn(
+        &mut self,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: i128,
+    ) -> Result<(u128, u128), PoolError> {
+        Ok((0, 0))
+    }
+
+    fn swap(
+        &mut self,
+        recipient: AccountId,
+        zero_for_one: bool,
+        amount_specified: i128,
+        sqrt_price_limit_x96: u128,
+    ) -> Result<(u128, u128),PoolError>{
+        Ok((0, 0))
+    }
+
+    fn flash(
+        &mut self,
+        recipient: AccountId,
+        amount0: i128,
+        amount1: i128,
+        data: Vec<u8>,
+    ) -> Result<(), PoolError>{
+        Ok(())
+    }
 
     fn get_token_0(&self) -> AccountId {
         self.data::<data::Data>().token_0
