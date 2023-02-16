@@ -1,4 +1,4 @@
-use ink_storage::traits::{PackedLayout, SpreadLayout, StorageLayout};
+use ink_storage::traits::{PackedLayout, SpreadLayout, StorageLayout, SpreadAllocate};
 use openbrush::{
     storage::Mapping,
     traits::{AccountId, Balance, Timestamp},
@@ -43,8 +43,8 @@ pub struct PositionInfo {
     pub token_owed_1: u128,
 }
 
-#[derive(Default, Debug)]
-#[openbrush::upgradeable_storage(STORAGE_KEY)]
+#[derive(Default, Debug, Clone, Copy, SpreadLayout, SpreadAllocate,  scale::Encode, scale::Decode )]
+#[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
 pub struct Slot {
     // the current price
     pub sqrt_price_x96: u128,

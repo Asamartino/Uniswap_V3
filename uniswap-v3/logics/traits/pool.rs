@@ -37,12 +37,8 @@ pub trait Pool {
     #[ink(message)]
     fn get_max_liquidity_per_tick(&self) -> u128;
 
-    // #[ink(message)]
-    // fn get_slot0(&self) -> Slot;
-
     #[ink(message)]
-    fn get_fee_growth_global_0x128(&self) -> u128;
-
+    fn get_slot_0(&self) -> Slot;
     #[ink(message)]
     fn get_fee_growth_global_1x128(&self) -> u128;
 
@@ -102,10 +98,11 @@ pub trait Pool {
     #[ink(message)]
     fn protocol_fees(&self) -> Result<(Balance, Balance), PoolError>;
     // #[ink(message)]
-    // fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<Balance, PoolError>;
+    fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<(u128,u128), PoolError>;
 
-    // #[ink(message)]
-    // fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<Balance, PoolError>;
+
+    #[ink(message)]
+    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,i128,i128), PoolError>;
 
     #[ink(message)]
     fn get_position(
@@ -127,4 +124,9 @@ pub trait Pool {
 pub enum PoolError {
     ZeroAmmount,
     TickError,
+    AddOverflowBalance0,
+    AddOverflowBalance1,
+    M0,
+    M1,
+    ModifyPosition,
 }
