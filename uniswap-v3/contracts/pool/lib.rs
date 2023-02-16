@@ -13,7 +13,7 @@ pub mod pool {
             psp22::{Internal, *},
             reentrancy_guard,
         },
-        traits::Storage,
+        traits::*,
     };
     use uniswap_v3::{impls::pool::*, traits::pool::*};
     #[ink(event)]
@@ -59,8 +59,8 @@ pub mod pool {
     pub struct Flash {
         sender: AccountId,
         recipient: AccountId,
-        amount0: Balance,
-        amount1: Balance,
+        amount0: u128,
+        amount1: u128,
         paid0: Balance,
         paid1: Balance,
     }
@@ -79,9 +79,10 @@ pub mod pool {
     #[ink(event)]
     pub struct CollectProtocol {
         sender: AccountId,
+        #[ink(topic)]
         recipient: AccountId,
-        amount0: Balance,
-        amount1: Balance,
+        amount0_requested: Balance,
+        amount1_requested: Balance,
     }
 
     #[ink(event)]
@@ -198,8 +199,8 @@ pub mod pool {
             &self,
             sender: AccountId,
             recipient: AccountId,
-            amount0: Balance,
-            amount1: Balance,
+            amount0: u128,
+            amount1: u128,
             paid0: u128,
             paid1: u128,
         ) {
@@ -230,14 +231,14 @@ pub mod pool {
             &self,
             sender: AccountId,
             recipient: AccountId,
-            amount0: Balance,
-            amount1: Balance,
+            amount0_requested: Balance,
+            amount1_requested: Balance,
         ) {
             self.env().emit_event(CollectProtocol {
                 sender,
                 recipient,
-                amount0,
-                amount1,
+                amount0_requested,
+                amount1_requested,
             });
         }
     }

@@ -4,9 +4,9 @@ use ink_prelude::vec::Vec;
 use openbrush::{
     contracts::{
         reentrancy_guard::*,
-        traits::{ownable::*, psp22::PSP22Error},
+        traits::{ownable::*, pausable::*, psp22::PSP22Error},
     },
-    traits::{AccountId,}
+    traits::{AccountId, Balance, Timestamp},
 };
 
 #[openbrush::wrapper]
@@ -85,13 +85,25 @@ pub trait Pool {
     fn flash(
         &mut self,
         recipient: AccountId,
-        amount0: i128,
-        amount1: i128,
+        amount0: u128,
+        amount1: u128,
         data: Vec<u8>,
     ) -> Result<(), PoolError>;
 
     #[ink(message)]
+    fn collect_protocol(
+        &mut self,
+        sender: AccountId,
+        recipient: AccountId,
+        amount0_requested: Balance,
+        amount1_requested: Balance,
+    ) -> Result<(Balance, Balance), PoolError>;
+
+    #[ink(message)]
+    fn protocol_fees(&self) -> Result<(Balance, Balance), PoolError>;
+    // #[ink(message)]
     fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<(u128,u128), PoolError>;
+
 
     #[ink(message)]
     fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,i128,i128), PoolError>;

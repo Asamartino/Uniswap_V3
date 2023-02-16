@@ -20,10 +20,11 @@ pub struct Data {
     pub slot_0: Slot,
     pub fee_growth_global_0x128: u128,
     pub fee_growth_global_1x128: u128,
-    pub protocol_fees: ProtocolFees,
     pub liquidity: u128,
     pub ticks: Mapping<i32, TickInfo>,
     pub tick_bitmap: Mapping<i32, u128>,
     pub positions: Mapping<[u8; 32], PositionInfo>,
+    pub fee0: Balance,
+    pub fee1: Balance,
     // pub observation_array: [Observation;65535],
 }
