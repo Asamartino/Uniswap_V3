@@ -6,4 +6,4 @@ Specifically the following contracts have been translated: <br />
 - [Pool Deployer](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3PoolDeployer.sol)
 - [Pool contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)*
 
-\*this translation is currently incomplete as this contract is quite large and calls many functions from the library.
+\*this conversion is currently incomplete as this contract is quite large and calls many functions from the library.
