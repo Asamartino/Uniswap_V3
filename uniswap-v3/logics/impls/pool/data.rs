@@ -1,18 +1,12 @@
 use crate::impls::pool::data_struct::*;
 
-
+use ink_storage::traits::StorageLayout;
 use openbrush::{
     storage::Mapping,
-    traits::{
-        AccountId,
-        Balance,
-        Timestamp,
-    },
+    traits::{AccountId, Balance, Timestamp},
 };
-use ink_storage::traits::StorageLayout;
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
-
 
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
@@ -23,13 +17,13 @@ pub struct Data {
     pub fee: u32,
     pub tick_spacing: i32,
     pub max_liquidity_per_tick: u128,
-    pub slot0: Slot,
+    pub slot_0: Slot,
     pub fee_growth_global_0x128: u128,
     pub fee_growth_global_1x128: u128,
     pub protocol_fees: ProtocolFees,
     pub liquidity: u128,
     pub ticks: Mapping<i32, TickInfo>,
     pub tick_bitmap: Mapping<i32, u128>,
-    pub positions: Mapping<[u8;32], PositionInfo>,
+    pub positions: Mapping<[u8; 32], PositionInfo>,
     // pub observation_array: [Observation;65535],
 }
