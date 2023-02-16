@@ -37,12 +37,12 @@ pub trait Pool {
     #[ink(message)]
     fn get_max_liquidity_per_tick(&self) -> u128;
 
-    // #[ink(message)]
-    // fn get_slot0(&self) -> Slot;
+    #[ink(message)]
+    fn get_slot_0(&self) -> Slot;
 
     #[ink(message)]
     fn get_fee_growth_global_0x128(&self) -> u128;
-
+    
     #[ink(message)]
     fn get_fee_growth_global_1x128(&self) -> u128;
 
@@ -64,14 +64,6 @@ pub trait Pool {
         amount0_requested: Balance,
         amount1_requested: Balance,
     ) -> Result<(Balance, Balance), PoolError>;
-
-    #[ink(message)]
-    fn burn(
-        &mut self,
-        tick_lower: i32,
-        tick_upper: i32,
-        amount: i128,
-    ) -> Result<(u128, u128), PoolError>;
 
     #[ink(message)]
     fn swap(
@@ -102,10 +94,11 @@ pub trait Pool {
     #[ink(message)]
     fn protocol_fees(&self) -> Result<(Balance, Balance), PoolError>;
     // #[ink(message)]
-    // fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<Balance, PoolError>;
+    fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<(u128,u128), PoolError>;
 
-    // #[ink(message)]
-    // fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<Balance, PoolError>;
+
+    #[ink(message)]
+    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,Balance, Balance), PoolError>;
 
     #[ink(message)]
     fn get_position(
@@ -118,6 +111,12 @@ pub trait Pool {
     #[ink(message)]
     fn _check_ticks(&self, tick_lower: i32, tick_upper: i32) -> bool;
 
+    #[ink(message)]
+    fn burn(&mut self, tick_lower: i32, tick_upper: i32, amount: u128) -> Result<(Balance,Balance), PoolError>;
+
+    fn _emit_burn_event(&self, _owner: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance,  _amount_0: Balance, _amount_1: Balance);
+
+
     // #[ink(message)]
     // fn _update_position(&self, onwer: AccountId, tick_lower: i32, tick_upper: i32, liquidity_delta: i128, tick: i32) -> Result<Balance, PoolError>;
 }
@@ -127,4 +126,12 @@ pub trait Pool {
 pub enum PoolError {
     ZeroAmmount,
     TickError,
+    AddOverflowBalance0,
+    AddOverflowBalance1,
+    M0,
+    M1,
+    ModifyPosition,
+    BurningInsuficientBalance,
+    CheckedNeg0,
+    CheckedNeg1,
 }

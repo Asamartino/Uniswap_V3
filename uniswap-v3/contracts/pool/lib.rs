@@ -31,14 +31,7 @@ pub mod pool {
         #[ink(topic)]
         amount: Balance,
     }
-    #[ink(event)]
-    pub struct Burn {
-        #[ink(topic)]
-        tick_lower: i32,
-        tick_upper: i32,
-        #[ink(topic)]
-        amount: Balance,
-    }
+
     #[ink(event)]
     pub struct Collect {
         #[ink(topic)]
@@ -174,13 +167,7 @@ pub mod pool {
                 amount1_requested,
             });
         }
-        fn _emit_burn_event(&self, tick_lower: i32, tick_upper: i32, amount: Balance) {
-            self.env().emit_event(Burn {
-                tick_lower,
-                tick_upper,
-                amount,
-            });
-        }
+
         fn _emit_swap_event(
             &self,
             recipient: AccountId,

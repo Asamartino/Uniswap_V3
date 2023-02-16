@@ -17,7 +17,7 @@ pub struct Data {
     pub fee: u32,
     pub tick_spacing: i32,
     pub max_liquidity_per_tick: u128,
-    pub slot0: Slot,
+    pub slot_0: Slot,
     pub fee_growth_global_0x128: u128,
     pub fee_growth_global_1x128: u128,
     pub liquidity: u128,
