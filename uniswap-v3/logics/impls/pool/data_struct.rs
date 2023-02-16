@@ -1,20 +1,10 @@
+use ink_storage::traits::{PackedLayout, SpreadLayout, StorageLayout};
 use openbrush::{
     storage::Mapping,
-    traits::{
-        AccountId,
-        Balance,
-        Timestamp,
-    },
+    traits::{AccountId, Balance, Timestamp},
 };
-use ink_storage::traits::{
-    StorageLayout,
-    SpreadLayout, 
-    PackedLayout,
-};
-
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
-
 
 #[derive(Debug, Clone, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
@@ -34,12 +24,11 @@ pub struct TickInfo {
     pub seconds_per_liquidity_outside_x128: u128,
     // the seconds spent on the other side of the tick (relative to the current tick)
     // only has relative meaning, not absolute — the value depends on when the tick is initialized
-    pub seconds_outside:u32,
+    pub seconds_outside: u32,
     // true iff the tick is initialized, i.e. the value is exactly equivalent to the expression liquidityGross != 0
     // these 8 bits are set to prevent fresh sstores when crossing newly initialized ticks
     pub initialized: bool,
 }
-
 
 #[derive(Debug, Clone, SpreadLayout, PackedLayout, scale::Encode, scale::Decode)]
 #[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
@@ -57,21 +46,21 @@ pub struct PositionInfo {
 #[derive(Default, Debug)]
 #[openbrush::upgradeable_storage(STORAGE_KEY)]
 pub struct Slot {
-        // the current price
-        pub sqrt_price_x96: u128,
-        // the current tick
-        pub  tick: i32,
-        // the most-recently updated index of the observations array
-        pub observation_index: u16,
-        // the current maximum number of observations that are being stored
-        pub observation_cardinality: u16,
-        // the next maximum number of observations to store, triggered in observations.write
-        pub observation_cardinality_next: u16,
-        // the current protocol fee as a percentage of the swap fee taken on withdrawal
-        // represented as an integer denominator (1/x)%
-        pub fee_protocol: u8,
-        // whether the pool is locked
-        pub unlocked: bool,
+    // the current price
+    pub sqrt_price_x96: u128,
+    // the current tick
+    pub tick: i32,
+    // the most-recently updated index of the observations array
+    pub observation_index: u16,
+    // the current maximum number of observations that are being stored
+    pub observation_cardinality: u16,
+    // the next maximum number of observations to store, triggered in observations.write
+    pub observation_cardinality_next: u16,
+    // the current protocol fee as a percentage of the swap fee taken on withdrawal
+    // represented as an integer denominator (1/x)%
+    pub fee_protocol: u8,
+    // whether the pool is locked
+    pub unlocked: bool,
 }
 
 #[derive(Default, Debug)]
@@ -79,13 +68,11 @@ pub struct Slot {
 pub struct ProtocolFees {
     pub token0: u128,
     pub token1: u128,
- }
+}
 
-
-
- #[derive(Default, Debug, Clone, scale::Encode, scale::Decode)]
- #[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
-pub  struct Observation {
+#[derive(Default, Debug, Clone, scale::Encode, scale::Decode)]
+#[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
+pub struct Observation {
     // the block timestamp of the observation
     pub block_timestamp: u32,
     // the tick accumulator, i.e. tick * time elapsed since the pool was first initialized
