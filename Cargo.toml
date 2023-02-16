@@ -2,3 +2,6 @@
 members = [
     "uniswap-v3/contracts/**",
 ]
+exclude = [
+    "uniswap-v3/logics",
+]
