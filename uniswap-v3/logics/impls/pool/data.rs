@@ -26,5 +26,8 @@ pub struct Data {
     pub positions: Mapping<[u8; 32], PositionInfo>,
     pub fee0: Balance,
     pub fee1: Balance,
+    pub swap_cache: SwapCache,
+    pub swap_state: SwapState,
+    pub step_computations: StepComputations,
     // pub observation_array: [Observation;65535],
 }

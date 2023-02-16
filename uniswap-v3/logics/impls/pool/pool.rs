@@ -10,17 +10,15 @@ use openbrush::{
     traits::{AccountId, Balance, Storage, Timestamp},
 };
 
-
-pub struct  ModifyPositionParams {
+pub struct ModifyPositionParams {
     // the address that owns the position
     owner: AccountId,
     // the lower and upper tick of the position
-    tick_lower : i32,
+    tick_lower: i32,
     tick_upper: i32,
     // any change in liquidity
     liquidity_delta: i128,
 }
-
 
 pub trait Internal {
     fn _emit_initialize_event(&self, sqrt_price_x96: u128, tick: i32);
@@ -39,7 +37,7 @@ pub trait Internal {
         amount0_requested: Balance,
         amount1_requested: Balance,
     );
-    
+
     fn _emit_swap_event(
         &self,
         recipient: AccountId,
@@ -130,15 +128,150 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         Ok((amount_0, amount_1))
     }
 
-
     fn swap(
         &mut self,
         recipient: AccountId,
         zero_for_one: bool,
         amount_specified: i128,
         sqrt_price_limit_x96: u128,
-    ) -> Result<(u128, u128), PoolError> {
-        Ok((0, 0))
+    ) -> Result<(Balance, Balance), PoolError> {
+        let mut amount_0: Balance;
+        let mut amount_1: Balance;
+        ensure!(amount_specified != 0, PoolError::AmountSpecifiedIsZero);
+        let slot0_start = self.data::<data::Data>().slot_0;
+        ensure!(slot0_start.unlocked, PoolError::PoolIsLocked);
+
+        // TODO: implement tick_math
+        if zero_for_one {
+            ensure!(
+                sqrt_price_limit_x96 < slot0_start.sqrt_price_x96
+                    && sqrt_price_limit_x96 > tick_math.min_sqrt_ratio,
+                PoolError::SqrtPriceLimitX96IsInvalid
+            );
+        } else {
+            ensure!(
+                sqrt_price_limit_x96 > slot0_start.sqrt_price_x96
+                    && sqrt_price_limit_x96 < tick_math.max_sqrt_ratio,
+                PoolError::SqrtPriceLimitX96IsInvalid
+            );
+        }
+        slot0_start.unlocked = false;
+
+        // refer https://github.com/Uniswap/v3-core/blob/05c10bf6d547d6121622ac51c457f93775e1df09/contracts/UniswapV3Pool.sol#L622
+        let mut cache = SwapCache {
+            liquidity_start: self.data::<data::Data>().liquidity,
+            block_timestamp: 0,
+            fee_protocol: 0,
+            seconds_per_liquidity_cumulative_x128: 0,
+            tick_cumulative: 0,
+            computed_latest_observations: false,
+        };
+
+        let exact_input = amount_specified > 0;
+        let state = SwapState {
+            amount_specified_remaining: amount_specified,
+            amount_caluclated: 0,
+            sqrt_price_x96: slot0_start.sqrt_price_x96,
+            tick: slot0_start.tick,
+            fee_growth_global_x128: if zero_for_one {
+                self.data::<data::Data>().fee_growth_global_0x128
+            } else {
+                self.data::<data::Data>().fee_growth_global_1x128
+            },
+            protocol_fee: 0,
+            liquidity: cache.liquidity_start,
+        };
+        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
+        while state.amount_specified_remaining != 0 && state.sqrt_price_x96 != sqrt_price_limit_x96
+        {
+            let step = self.data::<data::Data>().step_computations;
+            step.sqrt_price_start_x96 = state.sqrt_price_x96;
+            // TODO: implement tick_bitmap
+            // TODO: implement next_initialized_tick_within_one_word
+            (step.sqrt_price_next_x96, step.tick_next) = tick_bitmap
+                .next_initialized_tick_within_oneword(
+                    state.tick,
+                    self.data::<data::Data>().tick_spacing,
+                    zero_for_one,
+                );
+            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
+            if step.tick_next < tick_math.MIN_TICK {
+                step.tick_next = tick_math.MIN_TICK;
+            } else if step.tick_next > tick_math.MAX_TICK {
+                step.tick_next = tick_math.MAX_TICK;
+            }
+            //get the price for the next tick
+            step.sqrt_price_next_x96 = tick_math.get_sqrt_ratio_at_tick(step.tick_next);
+
+            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
+            //  TODO implement _compute_swap_step
+            (
+                state.sqrt_price_x96,
+                step.amount_in,
+                step.amount_out,
+                step.fee_amount,
+            ) = if zero_for_one {
+                if step.sqrt_price_next_x96 < sqrt_price_limit_x96 {
+                    _compute_swap_step(
+                        state.sqrt_price_x96,
+                        sqrt_price_limit_x96,
+                        state.liquidity,
+                        state.amount_specified_remaining,
+                        self.data::<data::Data>().fee,
+                    )
+                } else {
+                    _compute_swap_step(
+                        state.sqrt_price_x96,
+                        step.sqrt_price_next_x96,
+                        state.liquidity,
+                        state.amount_specified_remaining,
+                        self.data::<data::Data>().fee,
+                    )
+                }
+            } else {
+                if step.sqrt_price_next_x96 > sqrt_price_limit_x96 {
+                    _compute_swap_step(
+                        state.sqrt_price_x96,
+                        sqrt_price_limit_x96,
+                        state.liquidity,
+                        state.amount_specified_remaining,
+                        self.data::<data::Data>().fee,
+                    )
+                } else {
+                    _compute_swap_step(
+                        state.sqrt_price_x96,
+                        step.sqrt_price_next_x96,
+                        state.liquidity,
+                        state.amount_specified_remaining,
+                        self.data::<data::Data>().fee,
+                    )
+                }
+            };
+            // TODO implement converter(openzeppelin)
+            // refer https://github.com/Uniswap/v3-core/blob/05c10bf6d547d6121622ac51c457f93775e1df09/contracts/UniswapV3Pool.sol#L676
+            if exact_input {
+                state.amount_specified_remaining -= step.amount_in / step.fee_amount;
+                state.amount_caluclated = state.amount_caluclated;
+            } else {
+                state.amount_specified_remaining += step.amount_out;
+                state.amount_caluclated = state.amount_caluclated;
+            }
+            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
+            if cache.fee_protocol > 0 {
+                let delta = (step.fee_amount / cache.fee_protocol) as u128;
+                step.fee_amount -= delta;
+                state.protocol_fee += delta;
+            }
+            // update global fee tracker
+            // TODO: implement full_math
+            // TODO: implement fixed_point_128
+            if state.liquidity > 0 {
+                state.fee_growth_global_x128 +=
+                    full_math.mul_div(step.fee_amount, fixed_point_128.Q128, state.liquidity);
+            }
+            // refer
+        }
+        Ok((amount_0, amount_1))
     }
 
     fn flash(
@@ -269,16 +402,23 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
     //     self.data::<data::Data>().liquidity
     // }
 
-
-
-    fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<(u128,u128), PoolError>{ // need to convert to u256
+    fn mint(
+        &mut self,
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: u128,
+        data: u128,
+    ) -> Result<(u128, u128), PoolError> {
+        // need to convert to u256
         if amount == 0 {
-            return Err(PoolError::ZeroAmmount)
+            return Err(PoolError::ZeroAmmount);
         }
         //need to implement a better solution for conversion
         let amount_i128 = -(amount as i128);
-     
-        let ( _ ,  amount_0_int, amount_1_int) = self._modify_position( recipient, tick_lower, tick_upper, amount_i128)?;
+
+        let (_, amount_0_int, amount_1_int) =
+            self._modify_position(recipient, tick_lower, tick_upper, amount_i128)?;
 
         let amount_0 = amount_0_int as u128;
         let amount_1 = amount_1_int as u128;
@@ -291,19 +431,23 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         // need to implement: IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data)
         if amount_0 > 0 {
             balance_0_before = PSP22Ref::balance_of(&self.data::<data::Data>().token_0, contract);
-            let balance_0_before_plus_amount_0 = balance_0_before.checked_add(amount_0).ok_or(PoolError::AddOverflowBalance0)?;
-            if balance_0_before_plus_amount_0 > balance_0_before{
-                return Err(PoolError::M0)
+            let balance_0_before_plus_amount_0 = balance_0_before
+                .checked_add(amount_0)
+                .ok_or(PoolError::AddOverflowBalance0)?;
+            if balance_0_before_plus_amount_0 > balance_0_before {
+                return Err(PoolError::M0);
             }
         }
-        if amount_1 > 0{
+        if amount_1 > 0 {
             balance_1_before = PSP22Ref::balance_of(&self.data::<data::Data>().token_1, contract);
-            let balance_1_before_plus_amount_1 = balance_1_before.checked_add(amount_1).ok_or(PoolError::AddOverflowBalance1)?;
-            if balance_1_before_plus_amount_1 > balance_1_before{
-                return Err(PoolError::M1)
+            let balance_1_before_plus_amount_1 = balance_1_before
+                .checked_add(amount_1)
+                .ok_or(PoolError::AddOverflowBalance1)?;
+            if balance_1_before_plus_amount_1 > balance_1_before {
+                return Err(PoolError::M1);
             }
         }
-        Ok((amount_0,amount_1))
+        Ok((amount_0, amount_1))
     }
 
     // fn _update_position(&self, onwer: AccountId, tick_lower: i32, tick_upper: i32, liquidity_delta: i128, tick: i32) -> Result<Balance, PoolError>{
@@ -324,10 +468,15 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             .get(&Self::env().hash_encoded::<Blake2x256, _>(&(owner, tick_lower, tick_upper)))
     }
 
-
-    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,Balance, Balance), PoolError>{
-        if !self._check_ticks(tick_lower,tick_upper){
-            return Err(PoolError::TickError)
+    fn _modify_position(
+        &mut self,
+        owner: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        liqudiity_delta: i128,
+    ) -> Result<(PositionInfo, Balance, Balance), PoolError> {
+        if !self._check_ticks(tick_lower, tick_upper) {
+            return Err(PoolError::TickError);
         }
         let slot0 = self.get_slot_0();
         // need to implement _updatePosition
@@ -341,7 +490,13 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         //     }
         // }
 
-        let position = PositionInfo { liquidity: 0, fee_growth_inside_0_last_x128: 0, fee_growth_inside_1_last_x128:0, tokens_owed_0: 0, tokens_owed_1: 0};
+        let position = PositionInfo {
+            liquidity: 0,
+            fee_growth_inside_0_last_x128: 0,
+            fee_growth_inside_1_last_x128: 0,
+            tokens_owed_0: 0,
+            tokens_owed_1: 0,
+        };
         Ok((position, amount_0, amount_1))
     }
 
@@ -349,37 +504,63 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         tick_lower < tick_upper && tick_lower >= i32::MIN && tick_upper <= i32::MAX
     }
 
-
-    fn burn(&mut self, tick_lower: i32, tick_upper: i32, amount: u128) -> Result<(Balance,Balance), PoolError>{
-
+    fn burn(
+        &mut self,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: u128,
+    ) -> Result<(Balance, Balance), PoolError> {
         let amount_i128 = amount as i128;
 
-        let ( position,  amount_0_int, amount_1_int) = self._modify_position(Self::env().caller() , tick_lower, tick_upper, amount_i128)?;
-    
+        let (position, amount_0_int, amount_1_int) =
+            self._modify_position(Self::env().caller(), tick_lower, tick_upper, amount_i128)?;
+
         let amount_0: u128 = amount_0_int.checked_neg().ok_or(PoolError::CheckedNeg0)?;
         let amount_1: u128 = amount_1_int.checked_neg().ok_or(PoolError::CheckedNeg1)?;
 
         if amount_0 > 0 || amount_1 > 0 {
             self.data::<data::Data>()
-            .positions
-            .get(&Self::env().hash_encoded::<Blake2x256, _>(&(Self::env().caller(), tick_lower, tick_upper))).unwrap()
-            .tokens_owed_0 = position.tokens_owed_0 + amount_0;
-            
+                .positions
+                .get(&Self::env().hash_encoded::<Blake2x256, _>(&(
+                    Self::env().caller(),
+                    tick_lower,
+                    tick_upper,
+                )))
+                .unwrap()
+                .tokens_owed_0 = position.tokens_owed_0 + amount_0;
+
             self.data::<data::Data>()
-            .positions
-            .get(&Self::env().hash_encoded::<Blake2x256, _>(&(Self::env().caller(), tick_lower, tick_upper))).unwrap()
-            .tokens_owed_1 = position.tokens_owed_1 + amount_1;
-            
-        } else{
-            return Err(PoolError::BurningInsuficientBalance)
+                .positions
+                .get(&Self::env().hash_encoded::<Blake2x256, _>(&(
+                    Self::env().caller(),
+                    tick_lower,
+                    tick_upper,
+                )))
+                .unwrap()
+                .tokens_owed_1 = position.tokens_owed_1 + amount_1;
+        } else {
+            return Err(PoolError::BurningInsuficientBalance);
         }
 
-        self._emit_burn_event(Self::env().caller(), tick_lower, tick_upper, amount, amount_0, amount_1);
-        Ok((amount_0,amount_1))
-
+        self._emit_burn_event(
+            Self::env().caller(),
+            tick_lower,
+            tick_upper,
+            amount,
+            amount_0,
+            amount_1,
+        );
+        Ok((amount_0, amount_1))
     }
 
-    default fn _emit_burn_event(&self, _sender: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance, _amount_0: Balance, _amount_1: Balance){}
-
-
+    default fn _emit_burn_event(
+        &self,
+        _sender: AccountId,
+        _tick_lower: i32,
+        _tick_upper: i32,
+        _amount: Balance,
+        _amount_0: Balance,
+        _amount_1: Balance,
+    ) {
+    }
 }
