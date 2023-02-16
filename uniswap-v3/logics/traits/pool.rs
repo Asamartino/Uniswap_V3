@@ -39,10 +39,6 @@ pub trait Pool {
 
     #[ink(message)]
     fn get_slot_0(&self) -> Slot;
-
-    #[ink(message)]
-    fn get_fee_growth_global_0x128(&self) -> u128;
-
     #[ink(message)]
     fn get_fee_growth_global_1x128(&self) -> u128;
 

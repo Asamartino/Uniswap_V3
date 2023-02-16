@@ -245,6 +245,11 @@ impl<
             .get(&Self::env().hash_encoded::<Blake2x256, _>(&(owner, tick_lower, tick_upper)))
     }
 
+    // fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<Balance, PoolError>{
+    //     if !self._check_ticks(tick_lower,tick_upper){
+    //         return Err(PoolError::TickError)
+    //     }
+
     fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,i128,i128), PoolError>{
         if !self._check_ticks(tick_lower,tick_upper){
             return Err(PoolError::TickError)
