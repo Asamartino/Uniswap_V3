@@ -119,6 +119,9 @@ pub trait Pool {
 
     fn _emit_burn_event(&self, _owner: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance,  _amount_0: Balance, _amount_1: Balance);
 
+    fn _emit_mint_event(&self, _recipientr: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance, _amount_0: Balance, _amount_1: Balance);
+
+
 }
 
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]

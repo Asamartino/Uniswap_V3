@@ -137,20 +137,7 @@ pub mod pool {
                 tick,
             });
         }
-        fn _emit_mint_event(
-            &self,
-            recipient: AccountId,
-            tick_lower: i32,
-            tick_upper: i32,
-            amount: Balance,
-        ) {
-            self.env().emit_event(Mint {
-                recipient,
-                tick_lower,
-                tick_upper,
-                amount,
-            });
-        }
+
         fn _emit_collect_event(
             &self,
             recipient: AccountId,
