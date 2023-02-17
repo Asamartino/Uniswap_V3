@@ -3,7 +3,17 @@ use crate::traits::factory::FactoryRef;
 use ink_env::hash::Blake2x256;
 use ink_prelude::vec::Vec;
 
+use crate::helpers::liquidity_helper::liquidity_num::{
+    MAX_SQRT_RATIO, MAX_TICK, MIN_SQRT_RATIO, MIN_TICK,
+};
+use crate::helpers::liquidity_helper::{
+    _compute_swap_step, get_sqrt_ratio_at_tick, get_tick_at_sqrt_ratio, mul_div,
+    next_initialized_tick_within_oneword, tick_bitmap,
+};
 use crate::{ensure, helpers::transfer_helper::safe_transfer};
+// use crate::helpers::liquidity_helper::{_compute_swap_step, get_sqrt_ratio_at_tick, get_tick_at_sqrt_ratio};
+// use crate::helpers::liquidity_helper::liquidity_num;
+// use crate::{ensure, helpers::transfer_helper::safe_transfer};
 use crate::{impls::pool::*, traits::pool::*};
 use openbrush::{
     contracts::{ownable::*, psp22::*, reentrancy_guard::*, traits::psp22::PSP22Ref},
@@ -137,6 +147,10 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
     ) -> Result<(Balance, Balance), PoolError> {
         let mut amount_0: Balance;
         let mut amount_1: Balance;
+        let min_tick = MIN_TICK;
+        let max_tick = MAX_TICK;
+        let min_sqrt_ratio = MIN_SQRT_RATIO;
+        let max_sqrt_ratio = MAX_SQRT_RATIO;
         ensure!(amount_specified != 0, PoolError::AmountSpecifiedIsZero);
         let slot0_start = self.data::<data::Data>().slot_0;
         ensure!(slot0_start.unlocked, PoolError::PoolIsLocked);
@@ -145,18 +159,17 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         if zero_for_one {
             ensure!(
                 sqrt_price_limit_x96 < slot0_start.sqrt_price_x96
-                    && sqrt_price_limit_x96 > tick_math.min_sqrt_ratio,
+                    && sqrt_price_limit_x96 > min_sqrt_ratio,
                 PoolError::SqrtPriceLimitX96IsInvalid
             );
         } else {
             ensure!(
                 sqrt_price_limit_x96 > slot0_start.sqrt_price_x96
-                    && sqrt_price_limit_x96 < tick_math.max_sqrt_ratio,
+                    && sqrt_price_limit_x96 < max_sqrt_ratio,
                 PoolError::SqrtPriceLimitX96IsInvalid
             );
         }
         slot0_start.unlocked = false;
-
         // refer https://github.com/Uniswap/v3-core/blob/05c10bf6d547d6121622ac51c457f93775e1df09/contracts/UniswapV3Pool.sol#L622
         let mut cache = SwapCache {
             liquidity_start: self.data::<data::Data>().liquidity,
@@ -188,20 +201,19 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             step.sqrt_price_start_x96 = state.sqrt_price_x96;
             // TODO: implement tick_bitmap
             // TODO: implement next_initialized_tick_within_one_word
-            (step.sqrt_price_next_x96, step.tick_next) = tick_bitmap
-                .next_initialized_tick_within_oneword(
-                    state.tick,
-                    self.data::<data::Data>().tick_spacing,
-                    zero_for_one,
-                );
+            (step.sqrt_price_next_x96, step.initialized) = next_initialized_tick_within_oneword(
+                state.tick,
+                self.data::<data::Data>().tick_spacing,
+                zero_for_one,
+            );
             // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
-            if step.tick_next < tick_math.MIN_TICK {
-                step.tick_next = tick_math.MIN_TICK;
-            } else if step.tick_next > tick_math.MAX_TICK {
-                step.tick_next = tick_math.MAX_TICK;
+            if step.tick_next < min_tick {
+                step.tick_next = min_tick;
+            } else if step.tick_next > max_tick {
+                step.tick_next = max_tick;
             }
             //get the price for the next tick
-            step.sqrt_price_next_x96 = tick_math.get_sqrt_ratio_at_tick(step.tick_next);
+            step.sqrt_price_next_x96 = get_sqrt_ratio_at_tick(step.tick_next);
 
             // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted
             //  TODO implement _compute_swap_step
@@ -250,24 +262,28 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             // TODO implement converter(openzeppelin)
             // refer https://github.com/Uniswap/v3-core/blob/05c10bf6d547d6121622ac51c457f93775e1df09/contracts/UniswapV3Pool.sol#L676
             if exact_input {
-                state.amount_specified_remaining -= step.amount_in / step.fee_amount;
+                state.amount_specified_remaining -= (step.amount_in / step.fee_amount) as i128;
                 state.amount_caluclated = state.amount_caluclated;
             } else {
-                state.amount_specified_remaining += step.amount_out;
+                state.amount_specified_remaining += step.amount_out as i128;
                 state.amount_caluclated = state.amount_caluclated;
             }
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if cache.fee_protocol > 0 {
-                let delta = (step.fee_amount / cache.fee_protocol) as u128;
+                let delta = step.fee_amount / cache.fee_protocol as u128;
                 step.fee_amount -= delta;
                 state.protocol_fee += delta;
             }
             // update global fee tracker
             // TODO: implement full_math
             // TODO: implement fixed_point_128
+            // // update global fee tracker
+            // if (state.liquidity > 0)
+            //     state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
+
             if state.liquidity > 0 {
                 state.fee_growth_global_x128 +=
-                    full_math.mul_div(step.fee_amount, fixed_point_128.Q128, state.liquidity);
+                    mul_div(step.fee_amount, u128::MAX, state.liquidity);
             }
             // refer
         }
@@ -382,7 +398,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
     //     self.data::<data::Data>().tick_spacing
     // }
 
-    // fn get_max_liquidity_per_tick(&self) -> u123 {
+    // fn get_max_liquidity_per_tick(&self) -> u128 {
     //     self.data::<data::Data>().max_liquidity_per_tick
     // }
 
