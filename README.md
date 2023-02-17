@@ -17,7 +17,7 @@ This conversion to ink! enables to gain access to Polkadot's interoperability fe
 
 
 ### Front-end implementation
-The frontend has been [created](https://dexfrontend-lilac.vercel.app/). The connections with our smart contracts are underway as wee need to implement [additional contracts](https://github.com/Uniswap/v3-periphery/tree/main/contracts).
+The frontend has been [created](https://dexfrontend-lilac.vercel.app/). The connections with our smart contracts are underway as we need to implement [additional contracts](https://github.com/Uniswap/v3-periphery/tree/main/contracts).
 
 ![Screenshot 2023-02-17 at 13 02 38](https://user-images.githubusercontent.com/67859510/219695799-4fc4b143-4317-4d25-a468-7e91f236a4d8.png)
 ![Screenshot 2023-02-17 at 13 03 05](https://user-images.githubusercontent.com/67859510/219695823-1654cf0e-6a38-4f66-ad14-c9e692308b23.png)
