@@ -12,7 +12,7 @@ We converted the following Uniswap V3 contracts from *Solidity* to *ink!*: <br /
 
 ### Why convert Uniswap V3?
 Uniswap V3 comes with many features that makes it one of the most flexible and efficient Automated Market Makers (AMM). Thus, previous AMM versions become obsolete (f.i. Uniswap V2, SushiSwap, etc.). <br />
-This convertion enables this AMM to gain access to Polkadot's interoperability features. Thus, enabling it to tap into a wider network of assets and users which will lead to an increased DeFi activity.
+This conversion to ink! enables to gain access to Polkadot's interoperability features. Thus, enabling this project to tap into a wider network of assets and users which will lead to an increased DeFi activity.
 
 
 
