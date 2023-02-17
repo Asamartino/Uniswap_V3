@@ -1,3 +1,4 @@
+use crate::ensure;
 use crate::impls::pool::data_struct::*;
 use ink_env::DefaultEnvironment;
 use ink_prelude::vec::Vec;
@@ -6,7 +7,6 @@ use openbrush::{
     storage::Mapping,
     traits::{AccountId, Balance},
 };
-
 pub mod liquidity_num {
     use primitive_types::U256;
     pub const MIN_TICK: i32 = -887272;
@@ -90,7 +90,21 @@ pub fn write(
 
 #[inline]
 pub fn add_delta(x: u128, y: i128) -> u128 {
-    0
+    let z: u128;
+    if y >= 0 {
+        if (x - y as u128) < x {
+            z = x - y as u128;
+        } else {
+            z = 0;
+        };
+    } else {
+        if (x + y as u128) >= x {
+            z = x + y as u128;
+        } else {
+            z = 0;
+        };
+    }
+    z
 }
 
 #[inline]
