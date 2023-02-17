@@ -158,7 +158,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         let min_sqrt_ratio = MIN_SQRT_RATIO;
         let max_sqrt_ratio = MAX_SQRT_RATIO;
         ensure!(amount_specified != 0, PoolError::AmountSpecifiedIsZero);
-        let slot0_start = self.data::<data::Data>().slot_0;
+        let mut slot0_start = self.data::<data::Data>().slot_0;
         ensure!(slot0_start.unlocked, PoolError::PoolIsLocked);
         let caller = Self::env().caller();
         // TODO: implement tick_math
@@ -188,7 +188,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         };
 
         let exact_input = amount_specified > 0;
-        let state = SwapState {
+        let mut state = SwapState {
             amount_specified_remaining: amount_specified,
             amount_calculated: 0,
             sqrt_price_x96: slot0_start.sqrt_price_x96,
@@ -204,15 +204,14 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit
         while state.amount_specified_remaining != 0 && state.sqrt_price_x96 != sqrt_price_limit_x96
         {
-            let step = self.data::<data::Data>().step_computations;
+            let _fee = self.data::<data::Data>().fee;
+            let _tick_spacing = self.data::<data::Data>().tick_spacing;
+            let mut step = &mut self.data::<data::Data>().step_computations;
             step.sqrt_price_start_x96 = state.sqrt_price_x96;
             // TODO: implement tick_bitmap
             // TODO: implement next_initialized_tick_within_one_word
-            (step.sqrt_price_next_x96, step.initialized) = next_initialized_tick_within_oneword(
-                state.tick,
-                self.data::<data::Data>().tick_spacing,
-                zero_for_one,
-            );
+            (step.sqrt_price_next_x96, step.initialized) =
+                next_initialized_tick_within_oneword(state.tick, _tick_spacing, zero_for_one);
             // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
             if step.tick_next < min_tick {
                 step.tick_next = min_tick;
@@ -236,7 +235,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
                         sqrt_price_limit_x96,
                         state.liquidity,
                         state.amount_specified_remaining,
-                        self.data::<data::Data>().fee,
+                        _fee,
                     )
                 } else {
                     _compute_swap_step(
@@ -244,7 +243,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
                         step.sqrt_price_next_x96,
                         state.liquidity,
                         state.amount_specified_remaining,
-                        self.data::<data::Data>().fee,
+                        _fee,
                     )
                 }
             } else {
@@ -254,7 +253,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
                         sqrt_price_limit_x96,
                         state.liquidity,
                         state.amount_specified_remaining,
-                        self.data::<data::Data>().fee,
+                        _fee,
                     )
                 } else {
                     _compute_swap_step(
@@ -262,7 +261,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
                         step.sqrt_price_next_x96,
                         state.liquidity,
                         state.amount_specified_remaining,
-                        self.data::<data::Data>().fee,
+                        _fee,
                     )
                 }
             };
@@ -308,7 +307,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
                     );
                     cache.computed_latest_observations = true;
                 }
-                let liquidity_net: i128 = if zero_for_one {
+                let mut liquidity_net: i128 = if zero_for_one {
                     cross(
                         step.tick_next,
                         state.fee_growth_global_x128,

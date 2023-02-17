@@ -12,8 +12,10 @@ pub mod liquidity_num {
     pub const MIN_TICK: i32 = -887272;
     pub const MAX_TICK: i32 = -MIN_TICK;
     pub const MIN_SQRT_RATIO: u128 = 4295128739;
-    pub const MAX_SQRT_RATIO: U256 =
-        U256::from("1461446703485210103287273052203988822378723970342");
+    pub const MAX_SQRT_RATIO: u128 = u128::MAX;
+    // TODO: use U256
+    // pub const MAX_SQRT_RATIO: U256 =
+    //     U256::from("1461446703485210103287273052203988822378723970342");
 }
 
 #[inline]

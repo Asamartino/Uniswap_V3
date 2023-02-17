@@ -182,6 +182,7 @@ pub mod pool {
             tick: i32,
         ) {
             self.env().emit_event(Swap {
+                sender,
                 recipient,
                 amount0,
                 amount1,
