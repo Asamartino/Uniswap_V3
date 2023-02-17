@@ -43,10 +43,13 @@ pub mod pool {
     }
     #[ink(event)]
     pub struct Swap {
+        sender: AccountId,
         recipient: AccountId,
-        zero_for_one: bool,
-        amount_specified: i128,
-        sqrt_price_limit_x96: u128,
+        amount0: Balance,
+        amount1: Balance,
+        sqrt_price_x96: u128,
+        liquidity: u128,
+        tick: i32,
     }
     #[ink(event)]
     pub struct Flash {
@@ -157,16 +160,22 @@ pub mod pool {
 
         fn _emit_swap_event(
             &self,
+            sender: AccountId,
             recipient: AccountId,
-            zero_for_one: bool,
-            amount_specified: i128,
-            sqrt_price_limit_x96: u128,
+            amount0: Balance,
+            amount1: Balance,
+            sqrt_price_x96: u128,
+            liquidity: u128,
+            tick: i32,
         ) {
             self.env().emit_event(Swap {
+                sender,
                 recipient,
-                zero_for_one,
-                amount_specified,
-                sqrt_price_limit_x96,
+                amount0,
+                amount1,
+                sqrt_price_x96,
+                liquidity,
+                tick,
             });
         }
         fn _emit_flash_event(

@@ -42,7 +42,7 @@ pub trait Pool {
 
     #[ink(message)]
     fn get_fee_growth_global_0x128(&self) -> u128;
-    
+
     #[ink(message)]
     fn get_fee_growth_global_1x128(&self) -> u128;
 
@@ -72,7 +72,7 @@ pub trait Pool {
         zero_for_one: bool,
         amount_specified: i128,
         sqrt_price_limit_x96: u128,
-    ) -> Result<(u128, u128), PoolError>;
+    ) -> Result<(Balance, Balance), PoolError>;
     #[ink(message)]
     fn flash(
         &mut self,
@@ -94,11 +94,23 @@ pub trait Pool {
     #[ink(message)]
     fn protocol_fees(&self) -> Result<(Balance, Balance), PoolError>;
     // #[ink(message)]
-    fn mint(&mut self, recipient: AccountId, tick_lower: i32, tick_upper: i32, amount: u128, data:u128) -> Result<(u128,u128), PoolError>;
-
+    fn mint(
+        &mut self,
+        recipient: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: u128,
+        data: u128,
+    ) -> Result<(u128, u128), PoolError>;
 
     #[ink(message)]
-    fn _modify_position(&mut self, owner: AccountId, tick_lower: i32, tick_upper: i32, liqudiity_delta: i128) -> Result<(PositionInfo,Balance, Balance), PoolError>;
+    fn _modify_position(
+        &mut self,
+        owner: AccountId,
+        tick_lower: i32,
+        tick_upper: i32,
+        liqudiity_delta: i128,
+    ) -> Result<(PositionInfo, Balance, Balance), PoolError>;
 
     #[ink(message)]
     fn get_position(
@@ -111,7 +123,6 @@ pub trait Pool {
     #[ink(message)]
     fn _check_ticks(&self, tick_lower: i32, tick_upper: i32) -> bool;
 
-    #[ink(message)]
     fn burn(&mut self, tick_lower: i32, tick_upper: i32, amount: u128) -> Result<(Balance,Balance), PoolError>;
 
     // #[ink(message)]
@@ -137,4 +148,7 @@ pub enum PoolError {
     BurningInsuficientBalance,
     CheckedNeg0,
     CheckedNeg1,
+    AmountSpecifiedIsZero,
+    PoolIsLocked,
+    SqrtPriceLimitX96IsInvalid,
 }
