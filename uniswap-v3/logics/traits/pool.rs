@@ -72,7 +72,7 @@ pub trait Pool {
         zero_for_one: bool,
         amount_specified: i128,
         sqrt_price_limit_x96: u128,
-    ) -> Result<(u128, u128), PoolError>;
+    ) -> Result<(Balance, Balance), PoolError>;
     #[ink(message)]
     fn flash(
         &mut self,

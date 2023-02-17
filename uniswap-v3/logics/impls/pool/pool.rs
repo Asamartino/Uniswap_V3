@@ -2,13 +2,14 @@ use crate::impls::pool::data_struct::*;
 use crate::traits::factory::FactoryRef;
 use ink_env::hash::Blake2x256;
 use ink_prelude::vec::Vec;
+use primitive_types::U256;
 
 use crate::helpers::liquidity_helper::liquidity_num::{
     MAX_SQRT_RATIO, MAX_TICK, MIN_SQRT_RATIO, MIN_TICK,
 };
 use crate::helpers::liquidity_helper::{
-    _compute_swap_step, get_sqrt_ratio_at_tick, get_tick_at_sqrt_ratio, mul_div,
-    next_initialized_tick_within_oneword, tick_bitmap,
+    _compute_swap_step, add_delta, cross, get_sqrt_ratio_at_tick, get_tick_at_sqrt_ratio, mul_div,
+    next_initialized_tick_within_oneword, observe_single, tick_bitmap, write,
 };
 use crate::{ensure, helpers::transfer_helper::safe_transfer};
 // use crate::helpers::liquidity_helper::{_compute_swap_step, get_sqrt_ratio_at_tick, get_tick_at_sqrt_ratio};
@@ -50,10 +51,13 @@ pub trait Internal {
 
     fn _emit_swap_event(
         &self,
+        sender: AccountId,
         recipient: AccountId,
-        zero_for_one: bool,
-        amount_specified: i128,
-        sqrt_price_limit_x96: u128,
+        amount0: Balance,
+        amount1: Balance,
+        sqrt_price_x96: u128,
+        liquidity: u128,
+        tick: i32,
     );
     fn _emit_flash_event(
         &self,
@@ -149,12 +153,14 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         let mut amount_1: Balance;
         let min_tick = MIN_TICK;
         let max_tick = MAX_TICK;
+        let token_0 = self.data::<data::Data>().token_0;
+        let token_1 = self.data::<data::Data>().token_1;
         let min_sqrt_ratio = MIN_SQRT_RATIO;
         let max_sqrt_ratio = MAX_SQRT_RATIO;
         ensure!(amount_specified != 0, PoolError::AmountSpecifiedIsZero);
         let slot0_start = self.data::<data::Data>().slot_0;
         ensure!(slot0_start.unlocked, PoolError::PoolIsLocked);
-
+        let caller = Self::env().caller();
         // TODO: implement tick_math
         if zero_for_one {
             ensure!(
@@ -164,6 +170,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             );
         } else {
             ensure!(
+                // TODO: FIX TYPE ERROR MAX_SQRT_RATIO
                 sqrt_price_limit_x96 > slot0_start.sqrt_price_x96
                     && sqrt_price_limit_x96 < max_sqrt_ratio,
                 PoolError::SqrtPriceLimitX96IsInvalid
@@ -183,7 +190,7 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
         let exact_input = amount_specified > 0;
         let state = SwapState {
             amount_specified_remaining: amount_specified,
-            amount_caluclated: 0,
+            amount_calculated: 0,
             sqrt_price_x96: slot0_start.sqrt_price_x96,
             tick: slot0_start.tick,
             fee_growth_global_x128: if zero_for_one {
@@ -263,10 +270,10 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             // refer https://github.com/Uniswap/v3-core/blob/05c10bf6d547d6121622ac51c457f93775e1df09/contracts/UniswapV3Pool.sol#L676
             if exact_input {
                 state.amount_specified_remaining -= (step.amount_in / step.fee_amount) as i128;
-                state.amount_caluclated = state.amount_caluclated;
+                state.amount_calculated = state.amount_calculated;
             } else {
                 state.amount_specified_remaining += step.amount_out as i128;
-                state.amount_caluclated = state.amount_caluclated;
+                state.amount_calculated = state.amount_calculated;
             }
             // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee
             if cache.fee_protocol > 0 {
@@ -277,16 +284,140 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
             // update global fee tracker
             // TODO: implement full_math
             // TODO: implement fixed_point_128
-            // // update global fee tracker
-            // if (state.liquidity > 0)
-            //     state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);
-
             if state.liquidity > 0 {
                 state.fee_growth_global_x128 +=
                     mul_div(step.fee_amount, u128::MAX, state.liquidity);
             }
-            // refer
+            // shift tick if we reached the next price
+            // TODO: implement observe_single
+            // TODO: implement cross
+            if state.sqrt_price_x96 == step.sqrt_price_next_x96 {
+                // check for the placeholder value, which we replace with the actual value the first time the swap
+                // crosses an initialized tick
+                if !cache.computed_latest_observations {
+                    (
+                        cache.tick_cumulative,
+                        cache.seconds_per_liquidity_cumulative_x128,
+                    ) = observe_single(
+                        cache.block_timestamp,
+                        0,
+                        slot0_start.tick,
+                        slot0_start.observation_index,
+                        cache.liquidity_start,
+                        slot0_start.observation_cardinality,
+                    );
+                    cache.computed_latest_observations = true;
+                }
+                let liquidity_net: i128 = if zero_for_one {
+                    cross(
+                        step.tick_next,
+                        state.fee_growth_global_x128,
+                        self.data::<data::Data>().fee_growth_global_1x128,
+                        cache.seconds_per_liquidity_cumulative_x128,
+                        cache.tick_cumulative,
+                        cache.block_timestamp,
+                    )
+                } else {
+                    cross(
+                        step.tick_next,
+                        self.data::<data::Data>().fee_growth_global_0x128,
+                        state.fee_growth_global_x128,
+                        cache.seconds_per_liquidity_cumulative_x128,
+                        cache.tick_cumulative,
+                        cache.block_timestamp,
+                    )
+                };
+                // if we're moving leftward, we interpret liquidityNet as the opposite sign
+                // safe because liquidityNet cannot be type(int128).min
+                if zero_for_one {
+                    liquidity_net = -liquidity_net
+                };
+                //TODO implement add_delta
+                state.liquidity = add_delta(state.liquidity, liquidity_net);
+            } else if state.sqrt_price_x96 != step.sqrt_price_start_x96 {
+                state.tick = get_tick_at_sqrt_ratio(state.sqrt_price_x96);
+            }
         }
+        // update tick and write an oracle entry if the tick change
+        if state.tick != slot0_start.tick {
+            let mut observation_index: u16;
+            let mut observation_cardinality: u16;
+            (observation_index, observation_cardinality) = write(
+                slot0_start.observation_index,
+                cache.block_timestamp,
+                slot0_start.tick,
+                cache.liquidity_start,
+                slot0_start.observation_cardinality,
+                slot0_start.observation_cardinality_next,
+            );
+            (
+                self.data::<data::Data>().slot_0.sqrt_price_x96,
+                self.data::<data::Data>().slot_0.tick,
+                self.data::<data::Data>().slot_0.observation_index,
+                self.data::<data::Data>().slot_0.observation_cardinality,
+            ) = (
+                state.sqrt_price_x96,
+                state.tick,
+                observation_index,
+                observation_cardinality,
+            );
+        } else {
+            // otherwise, just update the sqrt price
+            self.data::<data::Data>().slot_0.sqrt_price_x96 = state.sqrt_price_x96;
+        }
+        // update liquidity if it changed
+        if cache.liquidity_start != state.liquidity {
+            self.data::<data::Data>().liquidity = state.liquidity;
+        }
+        // update fee growth global and, if necessary, protocol fees
+        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees
+        if zero_for_one {
+            self.data::<data::Data>().fee_growth_global_0x128 = state.fee_growth_global_x128;
+            if state.protocol_fee > 0 {
+                // TODO data::Data::fee0 is Balance type
+                self.data::<data::Data>().fee0 += state.protocol_fee;
+            }
+        } else {
+            self.data::<data::Data>().fee_growth_global_1x128 = state.fee_growth_global_x128;
+            if state.protocol_fee > 0 {
+                //TODO data::Data::fee1 is Balance type
+                self.data::<data::Data>().fee1 += state.protocol_fee;
+            }
+        }
+        let amount_specified_i128 = amount_specified as i128;
+        let amount_specified_remaining_i128 = state.amount_specified_remaining as i128;
+
+        if zero_for_one == exact_input {
+            let amount_1_i128 = -amount_specified_remaining_i128;
+            amount_0 = (amount_specified_i128 - state.amount_specified_remaining) as Balance;
+            amount_1 = state.amount_calculated as Balance;
+        } else {
+            let amount_0_i128 = -amount_specified_remaining_i128;
+            amount_0 = state.amount_calculated as Balance;
+            amount_1 = (amount_specified_i128 - state.amount_specified_remaining) as Balance;
+        }
+
+        // do the transfers and collect payment
+        if zero_for_one {
+            if amount_1 < 0 {
+                safe_transfer(token_1, recipient, amount_1);
+            }
+        } else {
+            if amount_0 < 0 {
+                safe_transfer(token_0, recipient, amount_0);
+            }
+        }
+
+        self._emit_swap_event(
+            caller,
+            recipient,
+            amount_0,
+            amount_1,
+            state.sqrt_price_x96,
+            state.liquidity,
+            state.tick,
+        );
+        self.data::<data::Data>().slot_0.unlocked = true;
         Ok((amount_0, amount_1))
     }
 

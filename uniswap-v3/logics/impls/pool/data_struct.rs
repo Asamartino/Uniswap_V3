@@ -66,7 +66,7 @@ pub struct SwapState {
     // the amount remaining to be swapped in/out of the input/output asset
     pub amount_specified_remaining: i128,
     // the amount already swapped out/in of the output/input asset
-    pub amount_caluclated: i128,
+    pub amount_calculated: i128,
     // current sqrt(price)
     pub sqrt_price_x96: u128,
     // the tick associated with the current price
