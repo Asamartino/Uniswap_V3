@@ -1,9 +1,9 @@
 use crate::impls::pool::data_struct::*;
+use ink_prelude::vec::Vec;
 
-use ink_storage::traits::StorageLayout;
 use openbrush::{
     storage::Mapping,
-    traits::{AccountId, Balance, Timestamp},
+    traits::{AccountId, Balance},
 };
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
@@ -26,5 +26,6 @@ pub struct Data {
     pub positions: Mapping<[u8; 32], PositionInfo>,
     pub fee0: Balance,
     pub fee1: Balance,
+    // pub observation_vec: Vec<Observation>,
     // pub observation_array: [Observation;65535],
 }

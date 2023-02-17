@@ -1,13 +1,12 @@
 use crate::impls::pool::data_struct::*;
-use crate::traits::factory::FactoryRef;
 use ink_env::hash::Blake2x256;
 use ink_prelude::vec::Vec;
 
-use crate::{ensure, helpers::transfer_helper::safe_transfer};
+use crate::{helpers::transfer_helper::safe_transfer};
 use crate::{impls::pool::*, traits::pool::*};
 use openbrush::{
     contracts::{ownable::*, psp22::*, reentrancy_guard::*, traits::psp22::PSP22Ref},
-    traits::{AccountId, Balance, Storage, Timestamp},
+    traits::{AccountId, Balance, Storage},
 };
 
 
@@ -307,9 +306,13 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
     }
 
     // fn _update_position(&self, onwer: AccountId, tick_lower: i32, tick_upper: i32, liquidity_delta: i128, tick: i32) -> Result<Balance, PoolError>{
-    //     let position = self.get_position(owner,tick_lower, tick_upper);
+    //     let position = self.get_position(owner,tick_lower, tick_upper)?;
     //     let flipped_lower = false;
     //     let flipped_upper = false;
+
+    //     if liquidity_delta != 0 {
+    //         let time = Self::env().block_timestamp() as u32;
+    //     }
 
     // }
 

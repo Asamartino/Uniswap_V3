@@ -1,7 +1,6 @@
-use ink_storage::traits::{PackedLayout, SpreadLayout, StorageLayout, SpreadAllocate};
+use ink_storage::traits::{PackedLayout, SpreadLayout, StorageLayout, SpreadAllocate,};
 use openbrush::{
-    storage::Mapping,
-    traits::{AccountId, Balance, Timestamp},
+    traits::{Balance},
 };
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
@@ -70,8 +69,8 @@ pub struct Slot {
 //     pub token1: Balance,
 // }
 
-#[derive(Default, Debug, Clone, scale::Encode, scale::Decode)]
-#[cfg_attr(feature = "std", derive(StorageLayout, scale_info::TypeInfo))]
+#[derive(Default, Debug, Copy, Clone, scale::Encode, scale::Decode)]
+#[cfg_attr(feature = "std", derive(SpreadLayout, PackedLayout, scale_info::TypeInfo))]
 pub struct Observation {
     // the block timestamp of the observation
     pub block_timestamp: u32,
@@ -82,3 +81,43 @@ pub struct Observation {
     // whether or not the observation is initialized
     pub initialized: bool,
 }
+
+// #[derive(Debug, SpreadLayout, SpreadAllocate,  scale::Encode, scale::Decode )]
+// #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+// pub struct ObservationArray{
+//     pub array: [Observation; 65535]
+// }
+
+// impl Default for ObservationArray {
+//     fn default() -> ObservationArray {
+//         ObservationArray {
+//             array: [  Observation {
+//                               block_timestamp: 0,
+//                               tick_cumulative: 0,
+//                               seconds_per_liquidity_cumulative_x128: 0,
+//                               initialized: false,
+//                             }; 65535],
+//         }
+//     }
+// }
+
+// impl StorageLayout for ObservationArray{
+//     fn layout(key: &mut ink_primitives::KeyPtr) ->  ink_metadata::layout::Layout{Layout::Struct(Observation 
+//         {
+//         block_timestamp: 0,
+//         tick_cumulative: 0,
+//         seconds_per_liquidity_cumulative_x128: 0,
+//         initialized: false,
+//       })
+//     }
+// }
+// impl Default for Observation {
+//         fn default() -> Observation {
+//             Observation {
+//               block_timestamp: 0,
+//               tick_cumulative: 0,
+//               seconds_per_liquidity_cumulative_x128: 0,
+//               initialized: false,
+//             }
+//         }
+// }
