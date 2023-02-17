@@ -3,23 +3,21 @@ For this [Polkadot Hackathon](https://www.polkadotglobalseries.com/?utm_source=D
 - Build a DEX with ink! based on Astar's tutorial
 - Add a frontend to interact with our contract <br />
 
-We converted the Uniswap V3 contracts to ink!, specifically the following contracts have been translated: <br />
+We converted the following Uniswap V3 contracts to ink!: <br />
 - [Factory Contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Factory.sol)
 - [Pool Deployer](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3PoolDeployer.sol)
-- [Pool contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)*
+- [Pool Contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)*
 
-\*this translation is currently incomplete as this contract is quite large and calls many functions from the library.
+\*this conversion is currently incomplete as this contract is quite large and calls many other functions from the library.
 
+### Why convert Uniswap V3?
+Uniswap V3 comes with many features that makes it one of the most flexible and efficient Automated Market Maker (AMM), that makes previous versions obsoletes (f.i. Uniswap V2, Sushiswap,etc.).
 
-### What is CLAMM?
-CLAMM(Concentrated Liquidity AMM) is the modern concept of dex and it provide higher capital efficiency compare to previous dex like V2, sushiswap, and so on.
-
-UniswapV3 on Ethereum, Orca on Solana, StellaSwap on Moonbeam is also the same model.
 
 ## Front-end implementation
 [VerselURL](https://dexfrontend-lilac.vercel.app/)
 
-Implemented some simple Ui and interaction with ink! by using Polkadot{js} API.
+Implemented some simple Ii and interaction with ink! by using Polkadot{js} API.
 
 *note: swap and add liquidity on front-end is not working because we should implement [additional contract](https://github.com/Uniswap/v3-periphery/tree/main/contracts) outside of core contract, like `Router` and `Position Management`
 ![Screenshot 2023-02-17 at 13 02 38](https://user-images.githubusercontent.com/67859510/219695799-4fc4b143-4317-4d25-a468-7e91f236a4d8.png)
