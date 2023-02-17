@@ -1,7 +1,9 @@
 # Uniswap V3
-For this [Polkadot Hackathon](https://www.polkadotglobalseries.com/?utm_source=Discord&utm_medium=socials&utm_campaign=launch), we converted the Uniswap V3 contracts to ink!. <br />
-We relied on [tutorials](https://docs.astar.network/docs/build/wasm/from-zero-to-ink-hero/dex/) provided by Astar. <br />
-Specifically the following contracts have been translated: <br />
+For this [Polkadot Hackathon](https://www.polkadotglobalseries.com/?utm_source=Discord&utm_medium=socials&utm_campaign=launch), we relied on [tutorials](https://docs.astar.network/docs/build/wasm/from-zero-to-ink-hero/dex/) provided by Astar, and are competing for the **Bounty: Build a DeFi dApp with ink!** which entails: <br />
+- Built a DEX with ink! based on our tutorial.
+- Add a frontend to interact with your contract. <br />
+<br />
+We converted the Uniswap V3 contracts to ink!, specifically the following contracts have been translated:
 - [Factory Contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Factory.sol)
 - [Pool Deployer](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3PoolDeployer.sol)
 - [Pool contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)*
