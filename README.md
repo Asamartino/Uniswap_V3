@@ -5,7 +5,7 @@ For this [Polkadot Hackathon](https://www.polkadotglobalseries.com/?utm_source=D
 
 We converted the following Uniswap V3 contracts from *Solidity* to *ink!*: <br />
 - [Factory Contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Factory.sol)
-- [Pool Deployer](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3PoolDeployer.sol)
+- [Pool Deployer](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3PoolDeployer.sol) (merged with our factory contract)
 - [Pool Contract](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)*
 
 \*this conversion is currently in progress as this contract is quite large and calls many other functions from the library.
