@@ -1,12 +1,10 @@
-use crate::traits::pool::PoolRef;
-
 pub use crate::{impls::factory::*, traits::factory::*};
 
 use ink_env::hash::Blake2x256;
 
 use openbrush::{
     contracts::ownable::*,
-    modifier_definition, modifiers,
+    modifiers,
     traits::{AccountId, Storage, ZERO_ADDRESS},
 };
 
