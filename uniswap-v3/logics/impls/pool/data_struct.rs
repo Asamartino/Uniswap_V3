@@ -1,7 +1,5 @@
 use ink_storage::traits::{PackedLayout, SpreadAllocate, SpreadLayout, StorageLayout};
-use openbrush::{
-    traits::{Balance},
-};
+use openbrush::traits::Balance;
 
 pub const STORAGE_KEY: u32 = openbrush::storage_unique_key!(Data);
 
@@ -118,7 +116,10 @@ pub struct Slot {
 // }
 
 #[derive(Default, Debug, Copy, Clone, scale::Encode, scale::Decode)]
-#[cfg_attr(feature = "std", derive(SpreadLayout, PackedLayout, scale_info::TypeInfo))]
+#[cfg_attr(
+    feature = "std",
+    derive(SpreadLayout, PackedLayout, scale_info::TypeInfo)
+)]
 pub struct Observation {
     // the block timestamp of the observation
     pub block_timestamp: u32,
@@ -150,7 +151,7 @@ pub struct Observation {
 // }
 
 // impl StorageLayout for ObservationArray{
-//     fn layout(key: &mut ink_primitives::KeyPtr) ->  ink_metadata::layout::Layout{Layout::Struct(Observation 
+//     fn layout(key: &mut ink_primitives::KeyPtr) ->  ink_metadata::layout::Layout{Layout::Struct(Observation
 //         {
 //         block_timestamp: 0,
 //         tick_cumulative: 0,

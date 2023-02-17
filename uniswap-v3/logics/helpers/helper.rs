@@ -1,4 +1,3 @@
-
 // /// Evaluate `$x:expr` and if not true return `Err($y:expr)`.
 // ///
 // /// Used as `ensure!(expression_to_ensure, expression_to_return_on_false)`.

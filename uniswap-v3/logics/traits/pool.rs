@@ -123,16 +123,35 @@ pub trait Pool {
     #[ink(message)]
     fn _check_ticks(&self, tick_lower: i32, tick_upper: i32) -> bool;
 
-    fn burn(&mut self, tick_lower: i32, tick_upper: i32, amount: u128) -> Result<(Balance,Balance), PoolError>;
+    fn burn(
+        &mut self,
+        tick_lower: i32,
+        tick_upper: i32,
+        amount: u128,
+    ) -> Result<(Balance, Balance), PoolError>;
 
     // #[ink(message)]
     // fn _update_position(&self, onwer: AccountId, tick_lower: i32, tick_upper: i32, liquidity_delta: i128, tick: i32) -> Result<Balance, PoolError>;
 
-    fn _emit_burn_event(&self, _owner: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance,  _amount_0: Balance, _amount_1: Balance);
+    fn _emit_burn_event(
+        &self,
+        _owner: AccountId,
+        _tick_lower: i32,
+        _tick_upper: i32,
+        _amount: Balance,
+        _amount_0: Balance,
+        _amount_1: Balance,
+    );
 
-    fn _emit_mint_event(&self, _recipientr: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance, _amount_0: Balance, _amount_1: Balance);
-
-
+    fn _emit_mint_event(
+        &self,
+        _recipientr: AccountId,
+        _tick_lower: i32,
+        _tick_upper: i32,
+        _amount: Balance,
+        _amount_0: Balance,
+        _amount_1: Balance,
+    );
 }
 
 #[derive(Debug, PartialEq, Eq, scale::Encode, scale::Decode)]

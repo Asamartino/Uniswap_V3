@@ -30,7 +30,6 @@ pub struct ModifyPositionParams {
 pub trait Internal {
     fn _emit_initialize_event(&self, sqrt_price_x96: u128, tick: i32);
 
-
     fn _emit_collect_event(
         &self,
         recipient: AccountId,
@@ -584,11 +583,27 @@ impl<T: Storage<data::Data> + Internal> Pool for T {
                 return Err(PoolError::M1);
             }
         }
-        self._emit_mint_event(Self::env().caller(), tick_lower, tick_upper, amount, amount_0, amount_1);
-        Ok((amount_0,amount_1))
+        self._emit_mint_event(
+            Self::env().caller(),
+            tick_lower,
+            tick_upper,
+            amount,
+            amount_0,
+            amount_1,
+        );
+        Ok((amount_0, amount_1))
     }
 
-    default fn _emit_mint_event(&self, _recipientr: AccountId, _tick_lower: i32, _tick_upper: i32, _amount: Balance, _amount_0: Balance, _amount_1: Balance){}
+    default fn _emit_mint_event(
+        &self,
+        _recipientr: AccountId,
+        _tick_lower: i32,
+        _tick_upper: i32,
+        _amount: Balance,
+        _amount_0: Balance,
+        _amount_1: Balance,
+    ) {
+    }
 
     // fn _update_position(&self, onwer: AccountId, tick_lower: i32, tick_upper: i32, liquidity_delta: i128, tick: i32) -> Result<Balance, PoolError>{
     //     let position = self.get_position(owner,tick_lower, tick_upper)?;
